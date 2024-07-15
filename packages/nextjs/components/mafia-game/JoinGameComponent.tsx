@@ -2,13 +2,14 @@ import React from "react";
 import { Address } from "~~/components/scaffold-eth";
 
 interface JoinGameComponentProps {
-  players: { addr: string; role: number; alive: boolean }[];
+  players: { addr: string; role: string; alive: boolean }[];
   handleJoinGame: () => void;
   hasJoined: boolean;
 }
 
 const JoinGameComponent: React.FC<JoinGameComponentProps> = ({ players, handleJoinGame, hasJoined }) => (
   <div className="mb-6 flex flex-col items-center">
+    <h1>Join Game</h1>
     {hasJoined ? (
       <p className="text-primary-lighter">You joined! Waiting other players to join</p>
     ) : (

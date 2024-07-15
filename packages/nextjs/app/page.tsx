@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
 import JoinGameComponent from "~~/components/mafia-game/JoinGameComponent";
+import MayorComponent from "~~/components/mafia-game/MayorComponent";
+import PlayerComponent from "~~/components/mafia-game/PlayerComponent";
 import {
   useScaffoldContract,
   useScaffoldReadContract,
@@ -13,12 +15,20 @@ import {
 
 interface Player {
   addr: string;
-  role: number;
+  role: string;
   alive: boolean;
 }
 
+const roleMapping: { [key: number]: string } = {
+  1: "Mafia",
+  2: "Doctor",
+  3: "Detective",
+  4: "Townsperson",
+};
+
 const Home: NextPage = () => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [mayor, setMayor] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const { address: connectedAddress } = useAccount();
 
@@ -26,22 +36,37 @@ const Home: NextPage = () => {
     contractName: "MafiaGame",
   });
 
-  const { writeContractAsync, isPending } = useScaffoldWriteContract("MafiaGame");
-  console.log("ispending", isPending);
+  const { data: playersAddress, isLoading: isLoadingPlayersAddress } = useScaffoldReadContract({
+    contractName: "MafiaGame",
+    functionName: "getPlayers",
+  });
+
+  const { data: mayorAddress, isLoading: isLoadingMayorAddress } = useScaffoldReadContract({
+    contractName: "MafiaGame",
+    functionName: "mayor",
+  });
+
+  const { data: gameStarted } = useScaffoldReadContract({
+    contractName: "MafiaGame",
+    functionName: "gameStarted",
+  });
+
+  const { writeContractAsync } = useScaffoldWriteContract("MafiaGame");
 
   useScaffoldWatchContractEvent({
     contractName: "MafiaGame",
     eventName: "PlayerJoined",
-    // The onLogs function is called whenever a GreetingChange event is emitted by the contract.
-    // Parameters emitted by the event can be destructed using the below example
-    // for this example: event GreetingChange(address greetingSetter, string newGreeting, bool premium, uint256 value);
     onLogs: logs => {
-      logs.map(log => {
-        const player: Player | undefined = log.args.player;
-        if (player) {
+      logs.forEach(log => {
+        const _player = log.args.player;
+        if (_player && _player.addr) {
+          const player: Player = {
+            addr: _player.addr.toString(),
+            role: "",
+            alive: true,
+          };
           console.log("📡 PlayerJoined event", player);
           setPlayers(prevPlayers => {
-            // Check if player already exists in the array
             const playerExists = prevPlayers.some(p => p.addr === player.addr);
             if (!playerExists) {
               return [...prevPlayers, player];
@@ -53,9 +78,22 @@ const Home: NextPage = () => {
     },
   });
 
-  const { data: playersAddress, isLoading: isLoadingPlayersAddress } = useScaffoldReadContract({
+  useScaffoldWatchContractEvent({
     contractName: "MafiaGame",
-    functionName: "getPlayers",
+    eventName: "RoleAssigned",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const playerAddress: string | undefined = log.args.player;
+        const roleNumber: number | undefined = log.args.role;
+        if (playerAddress && roleNumber !== undefined) {
+          console.log("📡 RoleAssigned event", playerAddress, roleNumber);
+          const roleName = roleMapping[roleNumber];
+          setPlayers(prevPlayers =>
+            prevPlayers.map(player => (player.addr === playerAddress ? { ...player, role: roleName } : player)),
+          );
+        }
+      });
+    },
   });
 
   useEffect(() => {
@@ -69,12 +107,11 @@ const Home: NextPage = () => {
         const _players: Player[] = [];
 
         for (let i = 0; i < playersAddress.length; i++) {
-          console.log(playersAddress[i]);
-          console.log(mafiaGameContract);
           const player = await mafiaGameContract?.read.players([playersAddress[i]]);
           console.log("player", player);
           if (player) {
-            _players.push({ addr: player[0], role: player[1], alive: player[2] });
+            const roleName = roleMapping[player[1]];
+            _players.push({ addr: player[0], role: roleName, alive: player[2] });
           }
         }
         setPlayers(_players);
@@ -94,6 +131,17 @@ const Home: NextPage = () => {
     }
   }, [players, connectedAddress]);
 
+  useEffect(() => {
+    if (players.length >= 4 && !gameStarted) {
+      console.log("Handle start game");
+      // handleStartGame();
+    }
+  }, [players]);
+
+  useEffect(() => {
+    setMayor(connectedAddress === mayorAddress);
+  }, [mayorAddress, isLoadingMayorAddress, connectedAddress]);
+
   const handleJoinGame = async () => {
     try {
       await writeContractAsync(
@@ -107,13 +155,34 @@ const Home: NextPage = () => {
         },
       );
     } catch (e) {
-      console.error("Error setting greeting", e);
+      console.error("Error joining the game", e);
+    }
+  };
+
+  const handleStartGame = async () => {
+    try {
+      await writeContractAsync(
+        {
+          functionName: "startGame",
+        },
+        {
+          onBlockConfirmation: txnReceipt => {
+            console.log("📦 Transaction blockHash", txnReceipt.blockHash);
+          },
+        },
+      );
+    } catch (e) {
+      console.error("Error starting the game", e);
     }
   };
 
   return (
     <div>
-      <JoinGameComponent players={players} handleJoinGame={handleJoinGame} hasJoined={hasJoined} />
+      {!mayor && !gameStarted && (
+        <JoinGameComponent players={players} handleJoinGame={handleJoinGame} hasJoined={hasJoined} />
+      )}
+      {!mayor && gameStarted && <PlayerComponent players={players} />}
+      {mayor && <MayorComponent players={players} gameStarted={gameStarted} handleStartGame={handleStartGame} />}
     </div>
   );
 };
