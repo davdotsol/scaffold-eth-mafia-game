@@ -5,6 +5,7 @@ import type { NextPage } from "next";
 import { useAccount } from "wagmi";
 import JoinGameComponent from "~~/components/mafia-game/JoinGameComponent";
 import {
+  useScaffoldContract,
   useScaffoldReadContract,
   useScaffoldWatchContractEvent,
   useScaffoldWriteContract,
@@ -21,14 +22,12 @@ const Home: NextPage = () => {
   const [hasJoined, setHasJoined] = useState(false);
   const { address: connectedAddress } = useAccount();
 
-  const { writeContractAsync, isPending } = useScaffoldWriteContract("MafiaGame");
-  console.log("ispending", isPending);
-  const { data: playersAddress } = useScaffoldReadContract({
+  const { data: mafiaGameContract } = useScaffoldContract({
     contractName: "MafiaGame",
-    functionName: "getPlayers",
   });
 
-  console.log("player addresses", playersAddress);
+  const { writeContractAsync, isPending } = useScaffoldWriteContract("MafiaGame");
+  console.log("ispending", isPending);
 
   useScaffoldWatchContractEvent({
     contractName: "MafiaGame",
@@ -53,6 +52,41 @@ const Home: NextPage = () => {
       });
     },
   });
+
+  const { data: playersAddress, isLoading: isLoadingPlayersAddress } = useScaffoldReadContract({
+    contractName: "MafiaGame",
+    functionName: "getPlayers",
+  });
+
+  useEffect(() => {
+    const fetchPlayers = async () => {
+      if (!playersAddress) {
+        console.error("playersAddress is undefined");
+        return;
+      }
+      try {
+        // const playersAddress = await readPlayersAddress();
+        const _players: Player[] = [];
+
+        for (let i = 0; i < playersAddress.length; i++) {
+          console.log(playersAddress[i]);
+          console.log(mafiaGameContract);
+          const player = await mafiaGameContract?.read.players([playersAddress[i]]);
+          console.log("player", player);
+          if (player) {
+            _players.push({ addr: player[0], role: player[1], alive: player[2] });
+          }
+        }
+        setPlayers(_players);
+      } catch (error) {
+        console.error("Error fetching players", error);
+      }
+    };
+
+    if (!isLoadingPlayersAddress) {
+      fetchPlayers();
+    }
+  }, [playersAddress, isLoadingPlayersAddress]);
 
   useEffect(() => {
     if (connectedAddress) {
