@@ -16,13 +16,23 @@ contract MafiaGame {
 		bool alive;
 	}
 
+	enum Phase {
+		Day,
+		Night
+	}
+
 	uint public playerCount;
 	uint public mafiaCount;
 	uint public phaseStartTime;
+	Phase public currentPhase;
 	mapping(address => Player) public players;
 	address[] public playerAddresses;
 	address[] public mafiaAddresses;
 	address public mayor;
+	address public target;
+	address public saved;
+	address public investigated;
+	string public story;
 	bool public gameStarted;
 
 	modifier onlyMayor() {
@@ -32,9 +42,12 @@ contract MafiaGame {
 
 	event PlayerJoined(Player player);
 	event RoleAssigned(address indexed player, Role role);
+	event PhaseChanged(Phase newPhase, string story);
 
 	constructor() {
 		mayor = msg.sender;
+		currentPhase = Phase.Night;
+		phaseStartTime = block.timestamp;
 	}
 
 	function joinGame() public {
@@ -98,6 +111,21 @@ contract MafiaGame {
 		}
 
 		phaseStartTime = block.timestamp;
+	}
+
+	function nextPhase() public onlyMayor {
+		require(gameStarted, "The game has not started yet");
+
+		if (currentPhase == Phase.Night) {
+			currentPhase = Phase.Day;
+		} else {
+			currentPhase = Phase.Night;
+		}
+		phaseStartTime = block.timestamp;
+		target = address(0);
+		saved = address(0);
+		investigated = address(0);
+		emit PhaseChanged(currentPhase, story);
 	}
 
 	function getPlayers() public view returns (address[] memory) {

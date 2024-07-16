@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { NextPage } from "next";
+import { useTheme } from "next-themes";
 import { useAccount } from "wagmi";
 import JoinGameComponent from "~~/components/mafia-game/JoinGameComponent";
 import MayorComponent from "~~/components/mafia-game/MayorComponent";
@@ -26,11 +27,18 @@ const roleMapping: { [key: number]: string } = {
   4: "Townsperson",
 };
 
+const phaseMapping: { [key: number]: string } = {
+  0: "Day",
+  1: "Night",
+};
+
 const Home: NextPage = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [mayor, setMayor] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState<string>("");
   const { address: connectedAddress } = useAccount();
+  const { setTheme } = useTheme();
 
   const { data: mafiaGameContract } = useScaffoldContract({
     contractName: "MafiaGame",
@@ -51,6 +59,11 @@ const Home: NextPage = () => {
     functionName: "gameStarted",
   });
 
+  const { data: phase, isLoading: isLoadingPhase } = useScaffoldReadContract({
+    contractName: "MafiaGame",
+    functionName: "currentPhase",
+  });
+
   const { writeContractAsync } = useScaffoldWriteContract("MafiaGame");
 
   useScaffoldWatchContractEvent({
@@ -65,7 +78,7 @@ const Home: NextPage = () => {
             role: "",
             alive: true,
           };
-          console.log("📡 PlayerJoined event", player);
+          // console.log("📡 PlayerJoined event", player);
           setPlayers(prevPlayers => {
             const playerExists = prevPlayers.some(p => p.addr === player.addr);
             if (!playerExists) {
@@ -86,11 +99,29 @@ const Home: NextPage = () => {
         const playerAddress: string | undefined = log.args.player;
         const roleNumber: number | undefined = log.args.role;
         if (playerAddress && roleNumber !== undefined) {
-          console.log("📡 RoleAssigned event", playerAddress, roleNumber);
+          // console.log("📡 RoleAssigned event", playerAddress, roleNumber);
           const roleName = roleMapping[roleNumber];
           setPlayers(prevPlayers =>
             prevPlayers.map(player => (player.addr === playerAddress ? { ...player, role: roleName } : player)),
           );
+        }
+      });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "PhaseChanged",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const phaseNumber: number | undefined = log.args.newPhase;
+        const story: string | undefined = log.args.story;
+        if (phaseNumber !== undefined) {
+          // console.log("📡 RoleAssigned event", playerAddress, roleNumber);
+          const phaseName = phaseMapping[phaseNumber];
+          console.log("phase:", phaseName);
+          console.log("story:", story);
+          setCurrentPhase(phaseName);
         }
       });
     },
@@ -132,15 +163,22 @@ const Home: NextPage = () => {
   }, [players, connectedAddress]);
 
   useEffect(() => {
-    if (players.length >= 4 && !gameStarted) {
-      console.log("Handle start game");
-      // handleStartGame();
-    }
-  }, [players]);
-
-  useEffect(() => {
     setMayor(connectedAddress === mayorAddress);
   }, [mayorAddress, isLoadingMayorAddress, connectedAddress]);
+
+  useEffect(() => {
+    console.log("useEffect phase:", isLoadingPhase);
+    if (phase != undefined) {
+      const phaseName = phaseMapping[phase];
+      console.log("useEffect phase:", phaseName);
+      setCurrentPhase(phaseName);
+      if (phaseName === "Day") {
+        setTheme("light");
+        return;
+      }
+      setTheme("dark");
+    }
+  }, [phase, isLoadingPhase]);
 
   const handleJoinGame = async () => {
     try {
@@ -176,13 +214,38 @@ const Home: NextPage = () => {
     }
   };
 
+  const handleNextPhase = async () => {
+    try {
+      await writeContractAsync(
+        {
+          functionName: "nextPhase",
+        },
+        {
+          onBlockConfirmation: txnReceipt => {
+            console.log("📦 Transaction blockHash", txnReceipt.blockHash);
+          },
+        },
+      );
+    } catch (e) {
+      console.error("Error starting the game", e);
+    }
+  };
+
   return (
     <div>
       {!mayor && !gameStarted && (
         <JoinGameComponent players={players} handleJoinGame={handleJoinGame} hasJoined={hasJoined} />
       )}
       {!mayor && gameStarted && <PlayerComponent players={players} />}
-      {mayor && <MayorComponent players={players} gameStarted={gameStarted} handleStartGame={handleStartGame} />}
+      {mayor && (
+        <MayorComponent
+          players={players}
+          gameStarted={gameStarted}
+          handleStartGame={handleStartGame}
+          handleNextPhase={handleNextPhase}
+          phase={currentPhase}
+        />
+      )}
     </div>
   );
 };

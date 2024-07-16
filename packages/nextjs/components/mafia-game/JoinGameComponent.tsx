@@ -1,5 +1,4 @@
 import React from "react";
-import { Address } from "~~/components/scaffold-eth";
 
 interface JoinGameComponentProps {
   players: { addr: string; role: string; alive: boolean }[];
@@ -26,7 +25,7 @@ const JoinGameComponent: React.FC<JoinGameComponentProps> = ({ players, handleJo
     <ul className="list-none text-primary-lighter">
       {players.map((player, index) => (
         <li className="mt-5" key={index}>
-          <Address address={player.addr} />
+          <strong>Player {index}:</strong> {player.addr}
         </li>
       ))}
     </ul>

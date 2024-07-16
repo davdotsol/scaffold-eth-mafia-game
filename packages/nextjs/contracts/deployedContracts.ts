@@ -18,6 +18,25 @@ const deployedContracts = {
           anonymous: false,
           inputs: [
             {
+              indexed: false,
+              internalType: "enum MafiaGame.Phase",
+              name: "newPhase",
+              type: "uint8",
+            },
+            {
+              indexed: false,
+              internalType: "string",
+              name: "story",
+              type: "string",
+            },
+          ],
+          name: "PhaseChanged",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
               components: [
                 {
                   internalType: "address",
@@ -65,6 +84,19 @@ const deployedContracts = {
         },
         {
           inputs: [],
+          name: "currentPhase",
+          outputs: [
+            {
+              internalType: "enum MafiaGame.Phase",
+              name: "",
+              type: "uint8",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
           name: "gameStarted",
           outputs: [
             {
@@ -84,6 +116,19 @@ const deployedContracts = {
               internalType: "address[]",
               name: "",
               type: "address[]",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "investigated",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
             },
           ],
           stateMutability: "view",
@@ -139,6 +184,13 @@ const deployedContracts = {
             },
           ],
           stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "nextPhase",
+          outputs: [],
+          stateMutability: "nonpayable",
           type: "function",
         },
         {
@@ -217,9 +269,48 @@ const deployedContracts = {
         },
         {
           inputs: [],
+          name: "saved",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
           name: "startGame",
           outputs: [],
           stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "story",
+          outputs: [
+            {
+              internalType: "string",
+              name: "",
+              type: "string",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "target",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
           type: "function",
         },
       ],

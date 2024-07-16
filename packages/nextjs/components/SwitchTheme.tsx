@@ -4,18 +4,14 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { MoonIcon, SunIcon } from "@heroicons/react/24/outline";
 
-export const SwitchTheme = ({ className }: { className?: string }) => {
-  const { setTheme, resolvedTheme } = useTheme();
+export const SwitchTheme = ({ className, handleNextPhase }: { className?: string; handleNextPhase: () => void }) => {
+  const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   const isDarkMode = resolvedTheme === "dark";
 
   const handleToggle = () => {
-    if (isDarkMode) {
-      setTheme("light");
-      return;
-    }
-    setTheme("dark");
+    handleNextPhase();
   };
 
   useEffect(() => {
