@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { NextPage } from "next";
 import { useTheme } from "next-themes";
 import { useAccount } from "wagmi";
@@ -34,7 +34,6 @@ const phaseMapping: { [key: number]: string } = {
 
 const Home: NextPage = () => {
   const [players, setPlayers] = useState<Player[]>([]);
-  const [mayor, setMayor] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<string>("");
   const { address: connectedAddress } = useAccount();
@@ -49,7 +48,7 @@ const Home: NextPage = () => {
     functionName: "getPlayers",
   });
 
-  const { data: mayorAddress, isLoading: isLoadingMayorAddress } = useScaffoldReadContract({
+  const { data: mayorAddress } = useScaffoldReadContract({
     contractName: "MafiaGame",
     functionName: "mayor",
   });
@@ -162,9 +161,7 @@ const Home: NextPage = () => {
     }
   }, [players, connectedAddress]);
 
-  useEffect(() => {
-    setMayor(connectedAddress === mayorAddress);
-  }, [mayorAddress, isLoadingMayorAddress, connectedAddress]);
+  const isMayor = useMemo(() => connectedAddress === mayorAddress, [connectedAddress, mayorAddress]);
 
   useEffect(() => {
     console.log("useEffect phase:", isLoadingPhase);
@@ -233,11 +230,11 @@ const Home: NextPage = () => {
 
   return (
     <div>
-      {!mayor && !gameStarted && (
+      {!isMayor && !gameStarted && (
         <JoinGameComponent players={players} handleJoinGame={handleJoinGame} hasJoined={hasJoined} />
       )}
-      {!mayor && gameStarted && <PlayerComponent players={players} />}
-      {mayor && (
+      {!isMayor && gameStarted && <PlayerComponent players={players} phase={currentPhase} />}
+      {isMayor && (
         <MayorComponent
           players={players}
           gameStarted={gameStarted}
