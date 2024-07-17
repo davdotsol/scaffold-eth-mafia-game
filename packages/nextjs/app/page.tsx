@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { NextPage } from "next";
 import { useTheme } from "next-themes";
 import { useAccount } from "wagmi";
@@ -34,6 +34,7 @@ const phaseMapping: { [key: number]: string } = {
 
 const Home: NextPage = () => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [isMayor, setIsMayor] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<string>("");
   const { address: connectedAddress } = useAccount();
@@ -48,7 +49,7 @@ const Home: NextPage = () => {
     functionName: "getPlayers",
   });
 
-  const { data: mayorAddress } = useScaffoldReadContract({
+  const { data: mayorAddress, isLoading: isLoadingMayorAddress } = useScaffoldReadContract({
     contractName: "MafiaGame",
     functionName: "mayor",
   });
@@ -69,23 +70,22 @@ const Home: NextPage = () => {
     contractName: "MafiaGame",
     eventName: "PlayerJoined",
     onLogs: logs => {
-      logs.forEach(log => {
-        const _player = log.args.player;
-        if (_player && _player.addr) {
-          const player: Player = {
-            addr: _player.addr.toString(),
-            role: "",
-            alive: true,
-          };
-          // console.log("📡 PlayerJoined event", player);
-          setPlayers(prevPlayers => {
-            const playerExists = prevPlayers.some(p => p.addr === player.addr);
-            if (!playerExists) {
-              return [...prevPlayers, player];
-            }
-            return prevPlayers;
-          });
-        }
+      const newPlayers = logs
+        .map(log => ({
+          addr: log.args.player?.toString() || "",
+          role: "",
+          alive: true,
+        }))
+        .filter(player => player.addr);
+
+      setPlayers(prevPlayers => {
+        const updatedPlayers = [...prevPlayers];
+        newPlayers.forEach(newPlayer => {
+          if (!updatedPlayers.some(player => player.addr === newPlayer.addr)) {
+            updatedPlayers.push(newPlayer);
+          }
+        });
+        return updatedPlayers;
       });
     },
   });
@@ -94,17 +94,20 @@ const Home: NextPage = () => {
     contractName: "MafiaGame",
     eventName: "RoleAssigned",
     onLogs: logs => {
-      logs.forEach(log => {
-        const playerAddress: string | undefined = log.args.player;
-        const roleNumber: number | undefined = log.args.role;
-        if (playerAddress && roleNumber !== undefined) {
-          // console.log("📡 RoleAssigned event", playerAddress, roleNumber);
-          const roleName = roleMapping[roleNumber];
-          setPlayers(prevPlayers =>
-            prevPlayers.map(player => (player.addr === playerAddress ? { ...player, role: roleName } : player)),
-          );
-        }
-      });
+      setPlayers(prevPlayers =>
+        prevPlayers.map(player => {
+          const log = logs.find(log => log.args.player === player.addr);
+          if (log) {
+            const roleNumber = log.args.role as keyof typeof roleMapping | undefined;
+            if (roleNumber !== undefined) {
+              return { ...player, role: roleMapping[roleNumber] };
+            } else {
+              console.error("roleNumber is undefined");
+            }
+          }
+          return player;
+        }),
+      );
     },
   });
 
@@ -112,17 +115,16 @@ const Home: NextPage = () => {
     contractName: "MafiaGame",
     eventName: "PhaseChanged",
     onLogs: logs => {
-      logs.forEach(log => {
-        const phaseNumber: number | undefined = log.args.newPhase;
-        const story: string | undefined = log.args.story;
-        if (phaseNumber !== undefined) {
-          // console.log("📡 RoleAssigned event", playerAddress, roleNumber);
-          const phaseName = phaseMapping[phaseNumber];
-          console.log("phase:", phaseName);
-          console.log("story:", story);
+      const log = logs[0];
+      if (log) {
+        const newPhase = log.args.newPhase as keyof typeof phaseMapping | undefined;
+        if (newPhase !== undefined) {
+          const phaseName = phaseMapping[newPhase];
           setCurrentPhase(phaseName);
+        } else {
+          console.error("newPhase is undefined");
         }
-      });
+      }
     },
   });
 
@@ -161,21 +163,21 @@ const Home: NextPage = () => {
     }
   }, [players, connectedAddress]);
 
-  const isMayor = useMemo(() => connectedAddress === mayorAddress, [connectedAddress, mayorAddress]);
+  console.log("connectedAddress", connectedAddress);
 
   useEffect(() => {
-    console.log("useEffect phase:", isLoadingPhase);
-    if (phase != undefined) {
+    console.log("connectedAddress", connectedAddress);
+    console.log("mayorAddress", mayorAddress);
+    setIsMayor(connectedAddress === mayorAddress);
+  }, [mayorAddress, isLoadingMayorAddress, connectedAddress]);
+
+  useEffect(() => {
+    if (phase !== undefined) {
       const phaseName = phaseMapping[phase];
-      console.log("useEffect phase:", phaseName);
       setCurrentPhase(phaseName);
-      if (phaseName === "Day") {
-        setTheme("light");
-        return;
-      }
-      setTheme("dark");
+      setTheme(phaseName === "Day" ? "light" : "dark");
     }
-  }, [phase, isLoadingPhase]);
+  }, [phase, isLoadingPhase, setTheme]);
 
   const handleJoinGame = async () => {
     try {

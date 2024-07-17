@@ -37,6 +37,25 @@ const deployedContracts = {
           anonymous: false,
           inputs: [
             {
+              indexed: true,
+              internalType: "address",
+              name: "accuser",
+              type: "address",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "accused",
+              type: "address",
+            },
+          ],
+          name: "PlayerAccused",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
               components: [
                 {
                   internalType: "address",
@@ -81,6 +100,57 @@ const deployedContracts = {
           ],
           name: "RoleAssigned",
           type: "event",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          name: "accusations",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_accused",
+              type: "address",
+            },
+          ],
+          name: "accusePlayer",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          name: "accusedPlayers",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
         },
         {
           inputs: [],
