@@ -21,7 +21,7 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
 }) => {
   const { targetNetwork } = useTargetNetwork();
   const isLocalNetwork = targetNetwork.id === hardhat.id;
-  console.log(phase);
+  console.log("phase", phase);
   return (
     <div className="mb-6 flex flex-col items-center">
       <h2 className="text-4xl font-semibold mb-4 text-primary-lighter">Mayor</h2>
