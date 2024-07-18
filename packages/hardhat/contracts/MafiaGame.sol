@@ -26,6 +26,8 @@ contract MafiaGame {
 	uint public phaseStartTime;
 	Phase public currentPhase;
 	mapping(address => Player) public players;
+	mapping(address => address) public accusations;
+	address[] public accusedPlayers;
 	address[] public playerAddresses;
 	address[] public mafiaAddresses;
 	address public mayor;
@@ -40,9 +42,18 @@ contract MafiaGame {
 		_;
 	}
 
+	modifier onlyAlive() {
+		require(
+			players[msg.sender].alive,
+			"You are dead and cannot perform this action"
+		);
+		_;
+	}
+
 	event PlayerJoined(Player player);
 	event RoleAssigned(address indexed player, Role role);
 	event PhaseChanged(Phase newPhase, string story);
+	event PlayerAccused(address indexed accuser, address indexed accused);
 
 	constructor() {
 		mayor = msg.sender;
@@ -126,6 +137,13 @@ contract MafiaGame {
 		saved = address(0);
 		investigated = address(0);
 		emit PhaseChanged(currentPhase, story);
+	}
+
+	function accusePlayer(address _accused) public onlyAlive {
+		require(currentPhase == Phase.Day, "Can only accuse during day phase");
+		accusations[msg.sender] = _accused;
+		accusedPlayers.push(_accused);
+		emit PlayerAccused(msg.sender, _accused);
 	}
 
 	function getPlayers() public view returns (address[] memory) {
