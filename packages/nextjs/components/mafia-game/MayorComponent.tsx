@@ -28,7 +28,7 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
       {!gameStarted && (
         <>
           <button
-            className={`btn font-bold py-2 px-4 ${players.length < 4 ? "btn-disabled" : ""}`}
+            className={`btn rounded-md btn-primary ${players.length < 4 ? "btn-disabled" : ""}`}
             onClick={handleStartGame}
           >
             Start Game

@@ -153,9 +153,9 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
                 placeholder="Enter address to investigate"
                 value={investigateAddress}
                 onChange={e => setInvestigateAddress(e.target.value)}
-                className="p-2 border rounded-md mr-2"
+                className="input input-bordered rounded-md w-full max-w-xs mr-1"
               />
-              <button onClick={handleInvestigate} className="p-2 bg-blue-500 text-white rounded-md">
+              <button onClick={handleInvestigate} className="btn rounded-md btn-primary ml-1">
                 Investigate
               </button>
             </div>
@@ -167,9 +167,9 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
                 placeholder="Enter address to save"
                 value={saveAddress}
                 onChange={e => setSaveAddress(e.target.value)}
-                className="p-2 border rounded-md mr-2"
+                className="input input-bordered rounded-md w-full max-w-xs mr-1"
               />
-              <button onClick={handleSave} className="p-2 bg-blue-500 text-white rounded-md">
+              <button onClick={handleSave} className="btn rounded-md btn-primary ml-1">
                 Save
               </button>
             </div>
@@ -181,9 +181,9 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
                 placeholder="Enter address to target"
                 value={targetAddress}
                 onChange={e => setTargetAddress(e.target.value)}
-                className="p-2 border rounded-md mr-2"
+                className="input input-bordered rounded-md w-full max-w-xs mr-1"
               />
-              <button onClick={handleTarget} className="p-2 bg-blue-500 text-white rounded-md">
+              <button onClick={handleTarget} className="btn rounded-md btn-primary ml-1">
                 Target
               </button>
             </div>
