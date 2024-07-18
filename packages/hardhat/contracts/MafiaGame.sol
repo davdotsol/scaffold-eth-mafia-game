@@ -131,12 +131,20 @@ contract MafiaGame {
 			currentPhase = Phase.Day;
 		} else {
 			currentPhase = Phase.Night;
+			resetAccusationsAndVotes();
 		}
 		phaseStartTime = block.timestamp;
 		target = address(0);
 		saved = address(0);
 		investigated = address(0);
 		emit PhaseChanged(currentPhase, story);
+	}
+
+	function resetAccusationsAndVotes() internal {
+		for (uint i = 0; i < playerAddresses.length; i++) {
+			accusations[playerAddresses[i]] = address(0);
+		}
+		accusedPlayers = new address[](playerCount);
 	}
 
 	function accusePlayer(address _accused) public onlyAlive {
@@ -148,5 +156,9 @@ contract MafiaGame {
 
 	function getPlayers() public view returns (address[] memory) {
 		return playerAddresses;
+	}
+
+	function getAccusedPlayers() public view returns (address[] memory) {
+		return accusedPlayers;
 	}
 }
