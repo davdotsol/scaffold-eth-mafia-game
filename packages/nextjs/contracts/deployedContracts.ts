@@ -56,6 +56,19 @@ const deployedContracts = {
           anonymous: false,
           inputs: [
             {
+              indexed: true,
+              internalType: "address",
+              name: "player",
+              type: "address",
+            },
+          ],
+          name: "PlayerEliminated",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
               components: [
                 {
                   internalType: "address",
@@ -99,6 +112,38 @@ const deployedContracts = {
             },
           ],
           name: "RoleAssigned",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "address",
+              name: "voter",
+              type: "address",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "accused",
+              type: "address",
+            },
+          ],
+          name: "VoteCast",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "address",
+              name: "eliminatedPlayer",
+              type: "address",
+            },
+          ],
+          name: "VotingCompleted",
           type: "event",
         },
         {
@@ -391,6 +436,51 @@ const deployedContracts = {
               internalType: "address",
               name: "",
               type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_accused",
+              type: "address",
+            },
+          ],
+          name: "voteForElimination",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          name: "votes",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "votingCompleted",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
             },
           ],
           stateMutability: "view",

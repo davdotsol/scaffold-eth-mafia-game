@@ -10,7 +10,7 @@ interface PlayerCardProps {
 
 const PlayerCard: React.FC<PlayerCardProps> = ({ addr, role, alive }) => {
   return (
-    <div className="card w-full bg-base-100 shadow-xl">
+    <div className={`card w-full shadow-xl ${alive ? "bg-base-100 text-base-content" : "bg-red-800 text-red-200"}`}>
       <div className="card-body">
         <h2 className="card-title">Player Details</h2>
         <div>
