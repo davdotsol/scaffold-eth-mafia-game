@@ -127,6 +127,7 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
       logs.forEach(log => {
         const eliminated = log.args.eliminatedPlayer as string;
         const eliminatedPlayer = players.find(player => player.addr === eliminated);
+        console.log("Eliminated player", eliminatedPlayer);
 
         if (eliminatedPlayer) {
           setEliminatedPlayers(prevPlayers => {
@@ -141,6 +142,23 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
 
         for (let i = 0; i < players.length; i++) {
           setHasVoted(prev => ({ ...prev, [players[i].addr as `0x${string}`]: true }));
+        }
+      });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "PhaseChanged",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const phaseNumber: number | undefined = log.args.newPhase;
+        if (phaseNumber === 1) {
+          // Assuming 1 is the Night phase
+          console.log("Resetting accusations for the night phase");
+          setAccusations({});
+          setHasAccused({});
+          setAccusedPlayers([]);
         }
       });
     },
@@ -316,10 +334,12 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
           <PlayerList players={players.filter(player => player.addr !== connectedAddress)} showRoles={false} />
         </div>
       )}
-      <div className="mb-6 flex flex-col items-center">
-        <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Eliminated Players</h2>
-        <PlayerList players={eliminatedPlayers} showRoles={true} />
-      </div>
+      {eliminatedPlayers.length > 0 && (
+        <div className="mb-6 flex flex-col items-center">
+          <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Eliminated Players</h2>
+          <PlayerList players={eliminatedPlayers} showRoles={true} />
+        </div>
+      )}
     </div>
   );
 };

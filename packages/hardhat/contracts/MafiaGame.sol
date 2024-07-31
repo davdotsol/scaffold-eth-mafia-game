@@ -27,6 +27,7 @@ contract MafiaGame {
 	Phase public currentPhase;
 	mapping(address => Player) public players;
 	mapping(address => address) public accusations;
+	mapping(address => uint) public votes;
 	address[] public accusedPlayers;
 	address[] public playerAddresses;
 	address[] public mafiaAddresses;
@@ -36,6 +37,7 @@ contract MafiaGame {
 	address public investigated;
 	string public story;
 	bool public gameStarted;
+	bool public votingCompleted;
 
 	modifier onlyMayor() {
 		require(msg.sender == mayor, "Only the mayor can perform this action");
@@ -54,6 +56,11 @@ contract MafiaGame {
 	event RoleAssigned(address indexed player, Role role);
 	event PhaseChanged(Phase newPhase, string story);
 	event PlayerAccused(address indexed accuser, address indexed accused);
+	event VoteCast(address indexed voter, address indexed accused);
+	event VotingCompleted(address indexed eliminatedPlayer);
+	event PlayerEliminated(address indexed player);
+	event GameWon(string message);
+	event GameContinue();
 
 	constructor() {
 		mayor = msg.sender;
@@ -144,7 +151,7 @@ contract MafiaGame {
 		for (uint i = 0; i < playerAddresses.length; i++) {
 			accusations[playerAddresses[i]] = address(0);
 		}
-		accusedPlayers = new address[](playerCount);
+		delete accusedPlayers;
 	}
 
 	function accusePlayer(address _accused) public onlyAlive {
@@ -152,6 +159,48 @@ contract MafiaGame {
 		accusations[msg.sender] = _accused;
 		accusedPlayers.push(_accused);
 		emit PlayerAccused(msg.sender, _accused);
+	}
+
+	function voteForElimination(address _accused) public onlyAlive {
+		require(currentPhase == Phase.Day, "Can only vote during day phase");
+		require(
+			accusations[_accused] != address(0),
+			"Player must be accused first"
+		);
+		votes[_accused]++;
+		emit VoteCast(msg.sender, _accused);
+
+		if (votes[_accused] > playerCount / 2) {
+			eliminatePlayer(_accused);
+			votingCompleted = true;
+			emit VotingCompleted(_accused);
+		}
+	}
+
+	function checkWin() public {
+		uint aliveMafia = 0;
+		uint aliveTownspeople = 0;
+		for (uint i = 0; i < playerAddresses.length; i++) {
+			if (players[playerAddresses[i]].alive) {
+				if (players[playerAddresses[i]].role == Role.Mafia) {
+					aliveMafia++;
+				} else {
+					aliveTownspeople++;
+				}
+			}
+		}
+		if (aliveMafia == 0) {
+			emit GameWon("Townspeople win!");
+		} else if (aliveMafia >= aliveTownspeople) {
+			emit GameWon("Mafia wins!");
+		} else {
+			emit GameContinue();
+		}
+	}
+
+	function eliminatePlayer(address _player) internal {
+		players[_player].alive = false;
+		emit PlayerEliminated(_player);
 	}
 
 	function getPlayers() public view returns (address[] memory) {

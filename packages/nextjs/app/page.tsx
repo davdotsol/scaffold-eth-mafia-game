@@ -114,12 +114,8 @@ const Home: NextPage = () => {
     onLogs: logs => {
       logs.forEach(log => {
         const phaseNumber: number | undefined = log.args.newPhase;
-        const story: string | undefined = log.args.story;
         if (phaseNumber !== undefined) {
-          // console.log("📡 RoleAssigned event", playerAddress, roleNumber);
           const phaseName = phaseMapping[phaseNumber];
-          console.log("phase:", phaseName);
-          console.log("story:", story);
           setCurrentPhase(phaseName);
         }
       });
@@ -240,7 +236,6 @@ const Home: NextPage = () => {
           gameStarted={gameStarted}
           handleStartGame={handleStartGame}
           handleNextPhase={handleNextPhase}
-          phase={currentPhase}
         />
       )}
     </div>

@@ -16,6 +16,25 @@ const deployedContracts = {
         },
         {
           anonymous: false,
+          inputs: [],
+          name: "GameContinue",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: false,
+              internalType: "string",
+              name: "message",
+              type: "string",
+            },
+          ],
+          name: "GameWon",
+          type: "event",
+        },
+        {
+          anonymous: false,
           inputs: [
             {
               indexed: false,
@@ -195,6 +214,13 @@ const deployedContracts = {
             },
           ],
           stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "checkWin",
+          outputs: [],
+          stateMutability: "nonpayable",
           type: "function",
         },
         {
