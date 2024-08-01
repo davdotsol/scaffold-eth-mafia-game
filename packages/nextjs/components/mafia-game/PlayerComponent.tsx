@@ -153,7 +153,19 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase, setSt
           setAccusations({});
           setHasAccused({});
           setAccusedPlayers([]);
-        } else {
+        }
+      });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "GameWon",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const message: string | undefined = log.args.message;
+        if (message) {
+          setGameOutcome(message);
           // Assuming 0 is the Day phase
           let nightStory = "Last night was peaceful.";
           if (mafiaAttack) {
@@ -173,22 +185,21 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase, setSt
 
   useScaffoldWatchContractEvent({
     contractName: "MafiaGame",
-    eventName: "GameWon",
-    onLogs: logs => {
-      logs.forEach(log => {
-        const message: string | undefined = log.args.message;
-        if (message) {
-          setGameOutcome(message);
-        }
-      });
-    },
-  });
-
-  useScaffoldWatchContractEvent({
-    contractName: "MafiaGame",
     eventName: "GameContinue",
     onLogs: () => {
       setGameOutcome("The game continues!");
+      // Assuming 0 is the Day phase
+      let nightStory = "Last night was peaceful.";
+      if (mafiaAttack) {
+        nightStory = `Last night, the mafia killed ${mafiaAttack}.`;
+        if (doctorSave && doctorSave === mafiaAttack) {
+          nightStory = `Last night, the mafia tried to kill ${mafiaAttack}, but the doctor saved them.`;
+        }
+      }
+      setStory(`${nightStory}\n${detectiveInvestigation || "The detective did not investigate anyone."}`);
+      setMafiaAttack(null);
+      setDoctorSave(null);
+      setDetectiveInvestigation(null);
     },
   });
 
@@ -245,141 +256,142 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase, setSt
   if (currentPlayer && !currentPlayer.alive) {
     return (
       <div className="mb-6 flex flex-col items-center">
-        <h2 className="text-4xl font-semibold mb-4 text-primary-lighter">You have been eliminated</h2>
+        <h2 className="text-4xl font-semibold mb-4 text-red-500">You have been eliminated</h2>
       </div>
     );
   }
 
   return (
-    <div className="mb-6 flex flex-col items-center">
-      <h2 className="text-4xl font-semibold mb-4 text-primary-lighter">Player</h2>
-      {currentPlayer && phase === "Night" && (
-        <div className="mb-4 p-4 border rounded-md">
-          <h2 className="text-xl font-semibold">Current Player</h2>
-          <p>Address: {currentPlayer.addr}</p>
-          <p>Role: {currentPlayer.role}</p>
-          <p>Status: {currentPlayer.alive ? "Alive" : "Dead"}</p>
-          {currentPlayer.role === "Detective" && currentPlayer.alive && (
-            <div className="mt-4">
-              <input
-                type="text"
-                placeholder="Enter address to investigate"
-                value={investigateAddress}
-                onChange={e => setInvestigateAddress(e.target.value)}
-                className="input input-bordered rounded-md w-full max-w-xs mr-1"
-              />
-              <button onClick={handleInvestigate} className="btn rounded-md btn-primary ml-1">
-                Investigate
-              </button>
-            </div>
-          )}
-          {currentPlayer.role === "Doctor" && currentPlayer.alive && (
-            <div className="mt-4">
-              <input
-                type="text"
-                placeholder="Enter address to save"
-                value={saveAddress}
-                onChange={e => setSaveAddress(e.target.value)}
-                className="input input-bordered rounded-md w-full max-w-xs mr-1"
-              />
-              <button onClick={handleSave} className="btn rounded-md btn-primary ml-1">
-                Save
-              </button>
-            </div>
-          )}
-          {currentPlayer.role === "Mafia" && currentPlayer.alive && (
-            <div className="mt-4">
-              <input
-                type="text"
-                placeholder="Enter address to target"
-                value={targetAddress}
-                onChange={e => setTargetAddress(e.target.value)}
-                className="input input-bordered rounded-md w-full max-w-xs mr-1"
-              />
-              <button onClick={handleTarget} className="btn rounded-md btn-primary ml-1">
-                Target
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-      {connectedAddress && currentPlayer && phase === "Day" && !allPlayersAccused && (
-        <div className="mb-4 p-4 border rounded-md flex-col">
-          <h2 className="text-xl font-semibold">Current Player</h2>
-          <p>Address: {currentPlayer.addr}</p>
-          <p>Role: {currentPlayer.role}</p>
-          <p>Status: {currentPlayer.alive ? "Alive" : "Dead"}</p>
-          <div className="mt-4 flex">
-            <input
-              type="text"
-              placeholder="Enter address to accuse"
-              value={accuseAddress}
-              onChange={e => setAccuseAddress(e.target.value)}
-              className="input input-bordered rounded-md w-full max-w-xs mr-1"
-              disabled={hasAccused[connectedAddress]}
-            />
-            <button
-              onClick={handleAccuse}
-              className={`btn rounded-md btn-primary ml-1 ${hasAccused[connectedAddress] ? "btn-disabled" : ""}`}
-            >
-              Accuse
-            </button>
+    <div className="mb-6 flex flex-col items-center space-y-6">
+      <h2 className="text-4xl font-semibold text-primary-lighter">Player</h2>
+      <div className="w-full max-w-3xl space-y-6">
+        {currentPlayer && phase === "Night" && (
+          <div className="mb-4 p-4 border rounded-md">
+            <h2 className="text-xl font-semibold  text-primary-lighter">Current Player</h2>
+            <p>Address: {currentPlayer.addr}</p>
+            <p>Role: {currentPlayer.role}</p>
+            <p>Status: {currentPlayer.alive ? "Alive" : "Dead"}</p>
+            {currentPlayer.role === "Detective" && currentPlayer.alive && (
+              <div className="mt-4 flex space-x-2">
+                <input
+                  type="text"
+                  placeholder="Enter address to investigate"
+                  value={investigateAddress}
+                  onChange={e => setInvestigateAddress(e.target.value)}
+                  className="input input-bordered rounded-md w-full"
+                />
+                <button onClick={handleInvestigate} className="btn rounded-md btn-primary">
+                  Investigate
+                </button>
+              </div>
+            )}
+            {currentPlayer.role === "Doctor" && currentPlayer.alive && (
+              <div className="mt-4 flex space-x-2">
+                <input
+                  type="text"
+                  placeholder="Enter address to save"
+                  value={saveAddress}
+                  onChange={e => setSaveAddress(e.target.value)}
+                  className="input input-bordered rounded-md w-full"
+                />
+                <button onClick={handleSave} className="btn rounded-md btn-primary">
+                  Save
+                </button>
+              </div>
+            )}
+            {currentPlayer.role === "Mafia" && currentPlayer.alive && (
+              <div className="mt-4 flex space-x-2">
+                <input
+                  type="text"
+                  placeholder="Enter address to target"
+                  value={targetAddress}
+                  onChange={e => setTargetAddress(e.target.value)}
+                  className="input input-bordered rounded-md w-full"
+                />
+                <button onClick={handleTarget} className="btn rounded-md btn-primary">
+                  Target
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-      )}
-      {connectedAddress && currentPlayer && phase === "Day" && allPlayersAccused && (
-        <div className="mb-4 p-4 border rounded-md flex-col">
-          <h2 className="text-xl font-semibold">Current Player</h2>
-          <p>Address: {currentPlayer.addr}</p>
-          <p>Role: {currentPlayer.role}</p>
-          <p>Status: {currentPlayer.alive ? "Alive" : "Dead"}</p>
-          <div className="mt-4 flex">
-            <input
-              type="text"
-              placeholder="Enter address to vote"
-              value={voteAddress}
-              onChange={e => setVoteAddress(e.target.value)}
-              className="input input-bordered rounded-md w-full max-w-xs mr-1"
-              disabled={hasVoted[connectedAddress]}
-            />
-            <button
-              onClick={handleVote}
-              className={`btn rounded-md btn-primary ml-1 ${hasVoted[connectedAddress] ? "btn-disabled" : ""}`}
-            >
-              Vote to eliminate
-            </button>
+        )}
+        {connectedAddress && currentPlayer && phase === "Day" && !allPlayersAccused && (
+          <div className="mb-4 p-4 border rounded-md w-full max-w-lgflex flex-col space-y-4">
+            <h2 className="text-xl font-semibold text-primary-lighter">Current Player</h2>
+            <p>Address: {currentPlayer.addr}</p>
+            <p>Role: {currentPlayer.role}</p>
+            <p>Status: {currentPlayer.alive ? "Alive" : "Dead"}</p>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Enter address to accuse"
+                value={accuseAddress}
+                onChange={e => setAccuseAddress(e.target.value)}
+                className="input input-bordered rounded-md w-full"
+                disabled={hasAccused[connectedAddress]}
+              />
+              <button
+                onClick={handleAccuse}
+                className={`btn rounded-md btn-primary ${hasAccused[connectedAddress] ? "btn-disabled" : ""}`}
+              >
+                Accuse
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-      {allPlayersAccused ? (
-        <div className="mb-6 flex flex-col items-center">
-          <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Accused Players</h2>
-          <PlayerList
-            players={accusedPlayers.filter(player => player.addr !== connectedAddress && player.alive)}
-            showRoles={false}
-          />
-        </div>
-      ) : (
-        <div className="mb-6 flex flex-col items-center">
-          <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Players</h2>
-          <PlayerList
-            players={players.filter(player => player.addr !== connectedAddress && player.alive)}
-            showRoles={false}
-          />
-        </div>
-      )}
-      {eliminatedPlayers.length > 0 && (
-        <div className="mb-6 flex flex-col items-center">
-          <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Eliminated Players</h2>
-          <PlayerList players={eliminatedPlayers} showRoles={true} />
-        </div>
-      )}
-
-      {gameOutcome && (
-        <div className="mt-4 p-4 border rounded-md">
-          <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
-        </div>
-      )}
+        )}
+        {connectedAddress && currentPlayer && phase === "Day" && allPlayersAccused && (
+          <div className="mb-4 p-4 border rounded-md w-full max-w-lg text-white flex flex-col space-y-4">
+            <h2 className="text-xl font-semibold text-primary-lighter">Current Player</h2>
+            <p>Address: {currentPlayer.addr}</p>
+            <p>Role: {currentPlayer.role}</p>
+            <p>Status: {currentPlayer.alive ? "Alive" : "Dead"}</p>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Enter address to vote"
+                value={voteAddress}
+                onChange={e => setVoteAddress(e.target.value)}
+                className="input input-bordered rounded-md w-full"
+                disabled={hasVoted[connectedAddress]}
+              />
+              <button
+                onClick={handleVote}
+                className={`btn rounded-md btn-primary ${hasVoted[connectedAddress] ? "btn-disabled" : ""}`}
+              >
+                Vote to eliminate
+              </button>
+            </div>
+          </div>
+        )}
+        {allPlayersAccused ? (
+          <>
+            <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Accused Players</h2>
+            <PlayerList
+              players={accusedPlayers.filter(player => player.addr !== connectedAddress && player.alive)}
+              showRoles={false}
+            />
+          </>
+        ) : (
+          <>
+            <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Players</h2>
+            <PlayerList
+              players={players.filter(player => player.addr !== connectedAddress && player.alive)}
+              showRoles={false}
+            />
+          </>
+        )}
+        {eliminatedPlayers.length > 0 && (
+          <>
+            <h2 className="text-2xl font-semibold mb-4 text-red-500">Eliminated Players</h2>
+            <PlayerList players={eliminatedPlayers} showRoles={true} />
+          </>
+        )}
+        {gameOutcome && (
+          <div className="mt-4 p-4 border rounded-md w-full max-w-lg">
+            <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
