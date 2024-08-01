@@ -30,13 +30,8 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
   useScaffoldWatchContractEvent({
     contractName: "MafiaGame",
     eventName: "PlayerEliminated",
-    onLogs: logs => {
-      logs.forEach(log => {
-        const eliminated = log.args.eliminatedPlayer as string;
-        players.map(player => (player.addr === eliminated ? { ...player, alive: false } : player));
-        // Update players state if necessary or ensure prop is updated correctly
-        setPlayerEliminated(true);
-      });
+    onLogs: () => {
+      setPlayerEliminated(true);
     },
   });
 

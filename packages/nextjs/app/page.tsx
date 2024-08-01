@@ -122,6 +122,20 @@ const Home: NextPage = () => {
     },
   });
 
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "PlayerEliminated",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const eliminated = log.args.eliminatedPlayer as string;
+        const updatedPlayers = players.map(player =>
+          player.addr === eliminated ? { ...player, alive: false } : player,
+        );
+        setPlayers(updatedPlayers);
+      });
+    },
+  });
+
   useEffect(() => {
     const fetchPlayers = async () => {
       if (!playersAddress) {

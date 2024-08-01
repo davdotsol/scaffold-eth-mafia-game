@@ -326,7 +326,10 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
       {allPlayersAccused ? (
         <div className="mb-6 flex flex-col items-center">
           <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Accused Players</h2>
-          <PlayerList players={accusedPlayers.filter(player => player.addr !== connectedAddress)} showRoles={false} />
+          <PlayerList
+            players={accusedPlayers.filter(player => player.addr !== connectedAddress && player.alive)}
+            showRoles={false}
+          />
         </div>
       ) : (
         <div className="mb-6 flex flex-col items-center">
