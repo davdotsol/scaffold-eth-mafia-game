@@ -126,10 +126,10 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
     onLogs: logs => {
       logs.forEach(log => {
         const eliminated = log.args.eliminatedPlayer as string;
-        const eliminatedPlayer = players.find(player => player.addr === eliminated);
-        console.log("Eliminated player", eliminatedPlayer);
+        const eliminatedPlayer: Player | undefined = players.find(player => player.addr === eliminated);
 
         if (eliminatedPlayer) {
+          eliminatedPlayer.alive = false;
           setEliminatedPlayers(prevPlayers => {
             const playerExists = prevPlayers.some(p => p.addr === eliminatedPlayer.addr);
             if (!playerExists) {
@@ -331,7 +331,10 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
       ) : (
         <div className="mb-6 flex flex-col items-center">
           <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Players</h2>
-          <PlayerList players={players.filter(player => player.addr !== connectedAddress)} showRoles={false} />
+          <PlayerList
+            players={players.filter(player => player.addr !== connectedAddress && player.alive)}
+            showRoles={false}
+          />
         </div>
       )}
       {eliminatedPlayers.length > 0 && (

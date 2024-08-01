@@ -236,6 +236,7 @@ const Home: NextPage = () => {
           gameStarted={gameStarted}
           handleStartGame={handleStartGame}
           handleNextPhase={handleNextPhase}
+          phase={currentPhase}
         />
       )}
     </div>

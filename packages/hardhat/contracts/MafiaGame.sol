@@ -58,7 +58,7 @@ contract MafiaGame {
 	event PlayerAccused(address indexed accuser, address indexed accused);
 	event VoteCast(address indexed voter, address indexed accused);
 	event VotingCompleted(address indexed eliminatedPlayer);
-	event PlayerEliminated(address indexed player);
+	event PlayerEliminated(address indexed eliminatedPlayer);
 	event GameWon(string message);
 	event GameContinue();
 

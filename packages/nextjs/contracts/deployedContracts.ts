@@ -77,7 +77,7 @@ const deployedContracts = {
             {
               indexed: true,
               internalType: "address",
-              name: "player",
+              name: "eliminatedPlayer",
               type: "address",
             },
           ],
