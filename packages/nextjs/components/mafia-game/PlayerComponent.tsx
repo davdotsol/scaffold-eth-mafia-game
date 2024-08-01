@@ -28,6 +28,7 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
   const [eliminatedPlayers, setEliminatedPlayers] = useState<Player[]>([]);
   const [accusedPlayers, setAccusedPlayers] = useState<Player[]>([]);
   const [voteAddress, setVoteAddress] = useState<string>("");
+  const [gameOutcome, setGameOutcome] = useState<string>("");
 
   const { data: mafiaGameContract } = useScaffoldContract({
     contractName: "MafiaGame",
@@ -38,19 +39,15 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
   useEffect(() => {
     const fetchAccusations = async () => {
       for (let i = 0; i < players.length; i++) {
-        console.log(`Fetching accusation for player ${players[i].addr}`);
         const accused = await mafiaGameContract?.read.accusations([players[i].addr as `0x${string}`]);
-        console.log(`Accused address for player ${players[i].addr}: ${accused}`);
         if (accused && accused !== "0x0000000000000000000000000000000000000000") {
           setHasAccused(prev => ({ ...prev, [players[i].addr]: true }));
           setAccusations(prev => ({ ...prev, [players[i].addr]: accused }));
           const accusedPlayer = players.find(player => player.addr === accused);
-          console.log("Found accused player", accusedPlayer);
           if (accusedPlayer) {
             setAccusedPlayers(prevPlayers => {
               const playerExists = prevPlayers.some(p => p.addr === accused);
               if (!playerExists) {
-                console.log(`Adding accused player ${accusedPlayer.addr}`);
                 return [...prevPlayers, accusedPlayer];
               }
               return prevPlayers;
@@ -67,17 +64,13 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
     const fetchEliminatedPlayers = async () => {
       for (let i = 0; i < players.length; i++) {
         const player = players[i];
-        console.log(`Fetching alive status for player ${player.addr}`);
         const isAlive = await mafiaGameContract?.read.players([player.addr as `0x${string}`]);
         if (isAlive) {
           player.alive = isAlive[2];
-          console.log(`Player ${player.addr} alive status: ${player.alive}`);
-
           if (!player.alive) {
             setEliminatedPlayers(prevPlayers => {
               const playerExists = prevPlayers.some(p => p.addr === player.addr);
               if (!playerExists) {
-                console.log(`Adding eliminated player ${player.addr}`);
                 return [...prevPlayers, player];
               }
               return prevPlayers;
@@ -109,7 +102,6 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
             setAccusedPlayers(prevPlayers => {
               const playerExists = prevPlayers.some(p => p.addr === accused);
               if (!playerExists) {
-                console.log(`Adding accused player ${accusedPlayer.addr}`);
                 return [...prevPlayers, accusedPlayer];
               }
               return prevPlayers;
@@ -133,7 +125,6 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
           setEliminatedPlayers(prevPlayers => {
             const playerExists = prevPlayers.some(p => p.addr === eliminatedPlayer.addr);
             if (!playerExists) {
-              console.log(`Adding eliminated player ${eliminatedPlayer.addr}`);
               return [...prevPlayers, eliminatedPlayer];
             }
             return prevPlayers;
@@ -155,7 +146,6 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
         const phaseNumber: number | undefined = log.args.newPhase;
         if (phaseNumber === 1) {
           // Assuming 1 is the Night phase
-          console.log("Resetting accusations for the night phase");
           setAccusations({});
           setHasAccused({});
           setAccusedPlayers([]);
@@ -164,23 +154,41 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
     },
   });
 
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "GameWon",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const message: string | undefined = log.args.message;
+        if (message) {
+          setGameOutcome(message);
+        }
+      });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "GameContinue",
+    onLogs: () => {
+      setGameOutcome("The game continues!");
+    },
+  });
+
   const handleInvestigate = () => {
     if (investigateAddress) {
-      console.log("Investigating player with address:", investigateAddress);
       setInvestigateAddress("");
     }
   };
 
   const handleSave = () => {
     if (saveAddress) {
-      console.log("Saving player with address:", saveAddress);
       setSaveAddress("");
     }
   };
 
   const handleTarget = () => {
     if (targetAddress) {
-      console.log("Targeting player with address:", targetAddress);
       setTargetAddress("");
     }
   };
@@ -344,6 +352,11 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
         <div className="mb-6 flex flex-col items-center">
           <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Eliminated Players</h2>
           <PlayerList players={eliminatedPlayers} showRoles={true} />
+        </div>
+      )}
+      {gameOutcome && (
+        <div className="mt-4 p-4 border rounded-md">
+          <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
         </div>
       )}
     </div>

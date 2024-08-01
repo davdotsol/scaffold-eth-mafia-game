@@ -24,6 +24,7 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
   const isLocalNetwork = targetNetwork.id === hardhat.id;
 
   const [playerEliminated, setPlayerEliminated] = useState<boolean>(false);
+  const [gameOutcome, setGameOutcome] = useState<string>("");
 
   const { writeContractAsync } = useScaffoldWriteContract("MafiaGame");
 
@@ -46,6 +47,27 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
           setPlayerEliminated(false);
         }
       });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "GameWon",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const message: string | undefined = log.args.message;
+        if (message) {
+          setGameOutcome(message);
+        }
+      });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "GameContinue",
+    onLogs: () => {
+      setGameOutcome("The game continues!");
     },
   });
 
@@ -95,6 +117,11 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
             </button>
           </div>
           <PlayerList players={players} showRoles={true} />
+          {gameOutcome && (
+            <div className="mt-4 p-4 border rounded-md">
+              <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
+            </div>
+          )}
         </div>
       )}
     </div>
