@@ -36,6 +36,7 @@ const Home: NextPage = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [hasJoined, setHasJoined] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<string>("");
+  const [story, setStory] = useState<string>("");
   const { address: connectedAddress } = useAccount();
   const { setTheme } = useTheme();
 
@@ -243,7 +244,7 @@ const Home: NextPage = () => {
       {!isMayor && !gameStarted && (
         <JoinGameComponent players={players} handleJoinGame={handleJoinGame} hasJoined={hasJoined} />
       )}
-      {!isMayor && gameStarted && <PlayerComponent players={players} phase={currentPhase} />}
+      {!isMayor && gameStarted && <PlayerComponent players={players} phase={currentPhase} setStory={setStory} />}
       {isMayor && (
         <MayorComponent
           players={players}
@@ -252,6 +253,12 @@ const Home: NextPage = () => {
           handleNextPhase={handleNextPhase}
           phase={currentPhase}
         />
+      )}
+      {story && (
+        <div className="mt-4 p-4 border rounded-md">
+          <h2 className="text-2xl font-semibold">Story</h2>
+          <p>{story}</p>
+        </div>
       )}
     </div>
   );

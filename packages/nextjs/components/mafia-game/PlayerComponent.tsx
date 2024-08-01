@@ -12,9 +12,10 @@ interface Player {
 interface PlayerComponentProps {
   players: Player[];
   phase: string;
+  setStory: (story: string) => void;
 }
 
-const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => {
+const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase, setStory }) => {
   const { address: connectedAddress } = useAccount();
   const currentPlayer = players.find(player => player.addr === connectedAddress);
 
@@ -29,6 +30,9 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
   const [accusedPlayers, setAccusedPlayers] = useState<Player[]>([]);
   const [voteAddress, setVoteAddress] = useState<string>("");
   const [gameOutcome, setGameOutcome] = useState<string>("");
+  const [mafiaAttack, setMafiaAttack] = useState<string | null>(null);
+  const [doctorSave, setDoctorSave] = useState<string | null>(null);
+  const [detectiveInvestigation, setDetectiveInvestigation] = useState<string | null>(null);
 
   const { data: mafiaGameContract } = useScaffoldContract({
     contractName: "MafiaGame",
@@ -149,6 +153,19 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
           setAccusations({});
           setHasAccused({});
           setAccusedPlayers([]);
+        } else {
+          // Assuming 0 is the Day phase
+          let nightStory = "Last night was peaceful.";
+          if (mafiaAttack) {
+            nightStory = `Last night, the mafia killed ${mafiaAttack}.`;
+            if (doctorSave && doctorSave === mafiaAttack) {
+              nightStory = `Last night, the mafia tried to kill ${mafiaAttack}, but the doctor saved them.`;
+            }
+          }
+          setStory(`${nightStory}\n${detectiveInvestigation || "The detective did not investigate anyone."}`);
+          setMafiaAttack(null);
+          setDoctorSave(null);
+          setDetectiveInvestigation(null);
         }
       });
     },
@@ -178,18 +195,21 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
   const handleInvestigate = () => {
     if (investigateAddress) {
       setInvestigateAddress("");
+      setDetectiveInvestigation(investigateAddress);
     }
   };
 
   const handleSave = () => {
     if (saveAddress) {
       setSaveAddress("");
+      setDoctorSave(saveAddress);
     }
   };
 
   const handleTarget = () => {
     if (targetAddress) {
       setTargetAddress("");
+      setMafiaAttack(targetAddress);
     }
   };
 
@@ -354,6 +374,7 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase }) => 
           <PlayerList players={eliminatedPlayers} showRoles={true} />
         </div>
       )}
+
       {gameOutcome && (
         <div className="mt-4 p-4 border rounded-md">
           <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
