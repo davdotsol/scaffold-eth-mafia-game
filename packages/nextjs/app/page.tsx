@@ -240,7 +240,7 @@ const Home: NextPage = () => {
   };
 
   return (
-    <div>
+    <div className="mb-6 flex flex-col items-center space-y-6">
       {!isMayor && !gameStarted && (
         <JoinGameComponent players={players} handleJoinGame={handleJoinGame} hasJoined={hasJoined} />
       )}
@@ -255,9 +255,11 @@ const Home: NextPage = () => {
         />
       )}
       {story && (
-        <div className="mt-4 p-4 border rounded-md">
-          <h2 className="text-2xl font-semibold">Story</h2>
-          <p>{story}</p>
+        <div className="w-full max-w-3xl space-y-6">
+          <div className="mt-4 p-4 border rounded-md">
+            <h2 className="text-2xl font-semibold">Story</h2>
+            <p>{story}</p>
+          </div>
         </div>
       )}
     </div>

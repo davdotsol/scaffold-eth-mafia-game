@@ -170,7 +170,7 @@ contract MafiaGame {
 		votes[_accused]++;
 		emit VoteCast(msg.sender, _accused);
 
-		if (votes[_accused] > playerCount / 2) {
+		if (votes[_accused] >= playerCount / 2) {
 			eliminatePlayer(_accused);
 			votingCompleted = true;
 			emit VotingCompleted(_accused);
@@ -200,6 +200,7 @@ contract MafiaGame {
 
 	function eliminatePlayer(address _player) internal {
 		players[_player].alive = false;
+		playerCount--;
 		emit PlayerEliminated(_player);
 	}
 

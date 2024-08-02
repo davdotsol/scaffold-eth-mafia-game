@@ -153,6 +153,8 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase, setSt
           setAccusations({});
           setHasAccused({});
           setAccusedPlayers([]);
+        } else {
+          setStory("");
         }
       });
     },
@@ -190,10 +192,18 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase, setSt
       setGameOutcome("The game continues!");
       // Assuming 0 is the Day phase
       let nightStory = "Last night was peaceful.";
-      if (mafiaAttack) {
-        nightStory = `Last night, the mafia killed ${mafiaAttack}.`;
-        if (doctorSave && doctorSave === mafiaAttack) {
-          nightStory = `Last night, the mafia tried to kill ${mafiaAttack}, but the doctor saved them.`;
+      if (mafiaAttack && mafiaAttack !== doctorSave) {
+        nightStory = `Last night, the mafia killed ${targetAddress}.`;
+      } else if (mafiaAttack) {
+        nightStory = `Last night, the mafia tried to kill ${targetAddress}, but the doctor save them.`;
+      }
+
+      if (detectiveInvestigation) {
+        const investigated: Player | undefined = players.find(player => player.addr === detectiveInvestigation);
+        if (investigated && investigated.role === "Mafia") {
+          nightStory += `The detective discovered that ${detectiveInvestigation} is a mafia member.`;
+        } else {
+          nightStory += `The detective found no evidence against ${detectiveInvestigation}.`;
         }
       }
       setStory(`${nightStory}\n${detectiveInvestigation || "The detective did not investigate anyone."}`);
@@ -340,7 +350,7 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase, setSt
           </div>
         )}
         {connectedAddress && currentPlayer && phase === "Day" && allPlayersAccused && (
-          <div className="mb-4 p-4 border rounded-md w-full max-w-lg text-white flex flex-col space-y-4">
+          <div className="mb-4 p-4 border rounded-md w-full max-w-lgflex flex-col space-y-4">
             <h2 className="text-xl font-semibold text-primary-lighter">Current Player</h2>
             <p>Address: {currentPlayer.addr}</p>
             <p>Role: {currentPlayer.role}</p>
@@ -387,7 +397,7 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase, setSt
           </>
         )}
         {gameOutcome && (
-          <div className="mt-4 p-4 border rounded-md w-full max-w-lg">
+          <div className="mt-4 p-4 border rounded-md">
             <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
           </div>
         )}
