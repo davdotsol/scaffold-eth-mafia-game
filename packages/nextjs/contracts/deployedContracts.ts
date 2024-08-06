@@ -17,6 +17,12 @@ const deployedContracts = {
         {
           anonymous: false,
           inputs: [],
+          name: "AccusationCompleted",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [],
           name: "GameContinue",
           type: "event",
         },
@@ -179,6 +185,19 @@ const deployedContracts = {
               internalType: "address",
               name: "",
               type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "accusationsCount",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
             },
           ],
           stateMutability: "view",
@@ -439,6 +458,13 @@ const deployedContracts = {
             },
           ],
           stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "resetGame",
+          outputs: [],
+          stateMutability: "nonpayable",
           type: "function",
         },
         {

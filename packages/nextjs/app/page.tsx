@@ -36,7 +36,10 @@ const Home: NextPage = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [hasJoined, setHasJoined] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<string>("");
+  const [gameOutcome, setGameOutcome] = useState<string>("");
   const [story, setStory] = useState<string>("");
+  const [votingCompleted, setVotingCompleted] = useState<boolean>(false);
+  const [playerEliminated, setPlayerEliminated] = useState<boolean>(false);
   const { address: connectedAddress } = useAccount();
   const { setTheme } = useTheme();
 
@@ -118,6 +121,10 @@ const Home: NextPage = () => {
         if (phaseNumber !== undefined) {
           const phaseName = phaseMapping[phaseNumber];
           setCurrentPhase(phaseName);
+          if (phaseName === "Night") {
+            setGameOutcome("");
+            setStory("");
+          }
         }
       });
     },
@@ -133,6 +140,20 @@ const Home: NextPage = () => {
           player.addr === eliminated ? { ...player, alive: false } : player,
         );
         setPlayers(updatedPlayers);
+        setPlayerEliminated(true);
+      });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "VotingCompleted",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const eliminatedPlayerAddr: string | undefined = log.args.eliminatedPlayer;
+        if (eliminatedPlayerAddr) {
+          setVotingCompleted(true);
+        }
       });
     },
   });
@@ -244,7 +265,15 @@ const Home: NextPage = () => {
       {!isMayor && !gameStarted && (
         <JoinGameComponent players={players} handleJoinGame={handleJoinGame} hasJoined={hasJoined} />
       )}
-      {!isMayor && gameStarted && <PlayerComponent players={players} phase={currentPhase} setStory={setStory} />}
+      {!isMayor && gameStarted && (
+        <PlayerComponent
+          players={players}
+          phase={currentPhase}
+          setGameOutcome={setGameOutcome}
+          setStory={setStory}
+          votingCompleted={votingCompleted}
+        />
+      )}
       {isMayor && (
         <MayorComponent
           players={players}
@@ -252,13 +281,15 @@ const Home: NextPage = () => {
           handleStartGame={handleStartGame}
           handleNextPhase={handleNextPhase}
           phase={currentPhase}
+          votingCompleted={votingCompleted}
+          playerEliminated={playerEliminated}
         />
       )}
-      {story && (
+      {gameOutcome && (
         <div className="w-full max-w-3xl space-y-6">
           <div className="mt-4 p-4 border rounded-md">
-            <h2 className="text-2xl font-semibold">Story</h2>
-            <p>{story}</p>
+            <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
+            {story && <p>{story}</p>}
           </div>
         </div>
       )}

@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import { hardhat } from "viem/chains";
 import { SwitchTheme } from "~~/components/SwitchTheme";
 import PlayerList from "~~/components/mafia-game/PlayerList";
-import { useScaffoldWatchContractEvent, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { useTargetNetwork } from "~~/hooks/scaffold-eth/useTargetNetwork";
 
 interface MayorComponentProps {
@@ -11,6 +11,8 @@ interface MayorComponentProps {
   handleStartGame: () => void;
   handleNextPhase: () => void;
   phase: string | undefined;
+  votingCompleted: boolean | undefined;
+  playerEliminated: boolean | undefined;
 }
 
 const MayorComponent: React.FC<MayorComponentProps> = ({
@@ -19,72 +21,13 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
   handleStartGame,
   handleNextPhase,
   phase,
+  votingCompleted,
+  playerEliminated,
 }) => {
   const { targetNetwork } = useTargetNetwork();
   const isLocalNetwork = targetNetwork.id === hardhat.id;
 
-  const [playerEliminated, setPlayerEliminated] = useState<boolean>(false);
-  const [votingCompleted, setVotingCompleted] = useState<boolean>(false);
-  const [gameOutcome, setGameOutcome] = useState<string>("");
-
   const { writeContractAsync } = useScaffoldWriteContract("MafiaGame");
-
-  useScaffoldWatchContractEvent({
-    contractName: "MafiaGame",
-    eventName: "PlayerEliminated",
-    onLogs: () => {
-      setPlayerEliminated(true);
-    },
-  });
-
-  useScaffoldWatchContractEvent({
-    contractName: "MafiaGame",
-    eventName: "PhaseChanged",
-    onLogs: logs => {
-      logs.forEach(log => {
-        const phaseNumber: number | undefined = log.args.newPhase;
-        if (phaseNumber === 1) {
-          // Assuming 1 is the Night phase
-          setPlayerEliminated(false);
-          setVotingCompleted(false);
-        }
-      });
-    },
-  });
-
-  useScaffoldWatchContractEvent({
-    contractName: "MafiaGame",
-    eventName: "GameWon",
-    onLogs: logs => {
-      logs.forEach(log => {
-        const message: string | undefined = log.args.message;
-        if (message) {
-          setGameOutcome(message);
-        }
-      });
-    },
-  });
-
-  useScaffoldWatchContractEvent({
-    contractName: "MafiaGame",
-    eventName: "GameContinue",
-    onLogs: () => {
-      setGameOutcome("The game continues!");
-    },
-  });
-
-  useScaffoldWatchContractEvent({
-    contractName: "MafiaGame",
-    eventName: "VotingCompleted",
-    onLogs: logs => {
-      logs.forEach(log => {
-        const eliminatedPlayerAddr: string | undefined = log.args.eliminatedPlayer;
-        if (eliminatedPlayerAddr) {
-          setVotingCompleted(true);
-        }
-      });
-    },
-  });
 
   const handleCheckWin = async () => {
     try {
@@ -101,7 +44,6 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
       await writeContractAsync({
         functionName: "eliminatePlayer",
       });
-      setVotingCompleted(false); // Reset the voting completed state after eliminating player
     } catch (error) {
       console.error("Error executing eliminatePlayer", error);
     }
@@ -137,7 +79,7 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
             <button
               className={`btn rounded-md btn-primary ${!votingCompleted ? "btn-disabled" : ""}`}
               onClick={handleEliminatePlayer}
-              disabled={!votingCompleted}
+              disabled={!votingCompleted || playerEliminated}
             >
               Eliminate Player
             </button>
@@ -150,11 +92,6 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
             </button>
           </div>
           <PlayerList players={players} showRoles={true} />
-          {gameOutcome && (
-            <div className="mt-4 p-4 border rounded-md">
-              <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -40,6 +40,7 @@ contract MafiaGame {
 	bool public votingCompleted;
 	uint public votesCast;
 	address public playerToEliminate;
+	uint public accusationsCount;
 
 	modifier onlyMayor() {
 		require(msg.sender == mayor, "Only the mayor can perform this action");
@@ -63,6 +64,7 @@ contract MafiaGame {
 	event PlayerEliminated(address indexed eliminatedPlayer);
 	event GameWon(string message);
 	event GameContinue();
+	event AccusationCompleted();
 
 	constructor() {
 		mayor = msg.sender;
@@ -147,6 +149,7 @@ contract MafiaGame {
 		saved = address(0);
 		investigated = address(0);
 		votesCast = 0; // Reset the vote count
+		accusationsCount = 0; // Reset the accusations count
 		emit PhaseChanged(currentPhase, story);
 	}
 
@@ -160,9 +163,19 @@ contract MafiaGame {
 
 	function accusePlayer(address _accused) public onlyAlive {
 		require(currentPhase == Phase.Day, "Can only accuse during day phase");
+		require(
+			accusations[msg.sender] == address(0),
+			"You have already accused a player"
+		);
+
 		accusations[msg.sender] = _accused;
 		accusedPlayers.push(_accused);
+		accusationsCount++;
 		emit PlayerAccused(msg.sender, _accused);
+
+		if (accusationsCount == playerCount) {
+			emit AccusationCompleted();
+		}
 	}
 
 	function voteForElimination(address _accused) public onlyAlive {
@@ -222,6 +235,33 @@ contract MafiaGame {
 		} else {
 			emit GameContinue();
 		}
+	}
+
+	function resetGame() public onlyMayor {
+		for (uint i = 0; i < playerAddresses.length; i++) {
+			delete players[playerAddresses[i]];
+			delete accusations[playerAddresses[i]];
+			delete votes[playerAddresses[i]];
+		}
+		delete playerAddresses;
+		delete accusedPlayers;
+		delete mafiaAddresses;
+
+		playerCount = 0;
+		mafiaCount = 0;
+		phaseStartTime = block.timestamp;
+		currentPhase = Phase.Night;
+		gameStarted = false;
+		votingCompleted = false;
+		votesCast = 0;
+		accusationsCount = 0;
+		playerToEliminate = address(0);
+		target = address(0);
+		saved = address(0);
+		investigated = address(0);
+		story = "";
+
+		emit PhaseChanged(currentPhase, story);
 	}
 
 	function getPlayers() public view returns (address[] memory) {
