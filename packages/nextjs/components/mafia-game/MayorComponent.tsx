@@ -24,6 +24,7 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
   const isLocalNetwork = targetNetwork.id === hardhat.id;
 
   const [playerEliminated, setPlayerEliminated] = useState<boolean>(false);
+  const [votingCompleted, setVotingCompleted] = useState<boolean>(false);
   const [gameOutcome, setGameOutcome] = useState<string>("");
 
   const { writeContractAsync } = useScaffoldWriteContract("MafiaGame");
@@ -45,6 +46,7 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
         if (phaseNumber === 1) {
           // Assuming 1 is the Night phase
           setPlayerEliminated(false);
+          setVotingCompleted(false);
         }
       });
     },
@@ -71,6 +73,19 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
     },
   });
 
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "VotingCompleted",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const eliminatedPlayerAddr: string | undefined = log.args.eliminatedPlayer;
+        if (eliminatedPlayerAddr) {
+          setVotingCompleted(true);
+        }
+      });
+    },
+  });
+
   const handleCheckWin = async () => {
     try {
       await writeContractAsync({
@@ -78,6 +93,17 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
       });
     } catch (error) {
       console.error("Error executing checkWin", error);
+    }
+  };
+
+  const handleEliminatePlayer = async () => {
+    try {
+      await writeContractAsync({
+        functionName: "eliminatePlayer",
+      });
+      setVotingCompleted(false); // Reset the voting completed state after eliminating player
+    } catch (error) {
+      console.error("Error executing eliminatePlayer", error);
     }
   };
 
@@ -108,6 +134,13 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
               handleNextPhase={handleNextPhase}
               className={`pointer-events-auto ${isLocalNetwork ? "self-end md:self-auto" : ""}`}
             />
+            <button
+              className={`btn rounded-md btn-primary ${!votingCompleted ? "btn-disabled" : ""}`}
+              onClick={handleEliminatePlayer}
+              disabled={!votingCompleted}
+            >
+              Eliminate Player
+            </button>
             <button
               className={`btn rounded-md btn-primary ${!playerEliminated || phase !== "Day" ? "btn-disabled" : ""}`}
               onClick={handleCheckWin}

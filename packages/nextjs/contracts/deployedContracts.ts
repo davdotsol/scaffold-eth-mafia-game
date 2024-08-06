@@ -238,6 +238,13 @@ const deployedContracts = {
         },
         {
           inputs: [],
+          name: "eliminatePlayer",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [],
           name: "gameStarted",
           outputs: [
             {
@@ -393,6 +400,19 @@ const deployedContracts = {
           type: "function",
         },
         {
+          inputs: [],
+          name: "playerToEliminate",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
           inputs: [
             {
               internalType: "address",
@@ -489,6 +509,19 @@ const deployedContracts = {
             },
           ],
           name: "votes",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "votesCast",
           outputs: [
             {
               internalType: "uint256",

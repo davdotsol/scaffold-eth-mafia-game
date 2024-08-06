@@ -122,18 +122,19 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({ players, phase, setSt
     onLogs: logs => {
       logs.forEach(log => {
         const eliminated = log.args.eliminatedPlayer as string;
-        const eliminatedPlayer: Player | undefined = players.find(player => player.addr === eliminated);
+        console.log("Eliminated after VotingCompleted", eliminated);
+        // const eliminatedPlayer: Player | undefined = players.find(player => player.addr === eliminated);
 
-        if (eliminatedPlayer) {
-          eliminatedPlayer.alive = false;
-          setEliminatedPlayers(prevPlayers => {
-            const playerExists = prevPlayers.some(p => p.addr === eliminatedPlayer.addr);
-            if (!playerExists) {
-              return [...prevPlayers, eliminatedPlayer];
-            }
-            return prevPlayers;
-          });
-        }
+        // if (eliminatedPlayer) {
+        //   eliminatedPlayer.alive = false;
+        //   setEliminatedPlayers(prevPlayers => {
+        //     const playerExists = prevPlayers.some(p => p.addr === eliminatedPlayer.addr);
+        //     if (!playerExists) {
+        //       return [...prevPlayers, eliminatedPlayer];
+        //     }
+        //     return prevPlayers;
+        //   });
+        // }
 
         for (let i = 0; i < players.length; i++) {
           setHasVoted(prev => ({ ...prev, [players[i].addr as `0x${string}`]: true }));
