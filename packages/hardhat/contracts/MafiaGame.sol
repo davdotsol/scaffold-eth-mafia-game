@@ -38,6 +38,8 @@ contract MafiaGame {
 	string public story;
 	bool public gameStarted;
 	bool public votingCompleted;
+	uint public votesCast;
+	address public playerToEliminate;
 
 	modifier onlyMayor() {
 		require(msg.sender == mayor, "Only the mayor can perform this action");
@@ -144,12 +146,14 @@ contract MafiaGame {
 		target = address(0);
 		saved = address(0);
 		investigated = address(0);
+		votesCast = 0; // Reset the vote count
 		emit PhaseChanged(currentPhase, story);
 	}
 
 	function resetAccusationsAndVotes() internal {
 		for (uint i = 0; i < playerAddresses.length; i++) {
 			accusations[playerAddresses[i]] = address(0);
+			votes[playerAddresses[i]] = 0; // Reset the votes
 		}
 		delete accusedPlayers;
 	}
@@ -168,13 +172,35 @@ contract MafiaGame {
 			"Player must be accused first"
 		);
 		votes[_accused]++;
+		votesCast++; // Increase the number of votes cast
 		emit VoteCast(msg.sender, _accused);
 
-		if (votes[_accused] >= playerCount / 2) {
-			eliminatePlayer(_accused);
+		if (votesCast == playerCount) {
+			// Check if all players have voted
+			address eliminatedPlayer = determineEliminatedPlayer();
+			playerToEliminate = eliminatedPlayer;
 			votingCompleted = true;
-			emit VotingCompleted(_accused);
+			emit VotingCompleted(eliminatedPlayer);
 		}
+	}
+
+	function determineEliminatedPlayer() internal view returns (address) {
+		address eliminatedPlayer;
+		uint highestVotes = 0;
+		for (uint i = 0; i < accusedPlayers.length; i++) {
+			if (votes[accusedPlayers[i]] > highestVotes) {
+				highestVotes = votes[accusedPlayers[i]];
+				eliminatedPlayer = accusedPlayers[i];
+			}
+		}
+		return eliminatedPlayer;
+	}
+
+	function eliminatePlayer() public onlyMayor {
+		require(playerToEliminate != address(0), "Eliminated must be a player");
+		players[playerToEliminate].alive = false;
+		playerCount--;
+		emit PlayerEliminated(playerToEliminate);
 	}
 
 	function checkWin() public {
@@ -196,12 +222,6 @@ contract MafiaGame {
 		} else {
 			emit GameContinue();
 		}
-	}
-
-	function eliminatePlayer(address _player) internal {
-		players[_player].alive = false;
-		playerCount--;
-		emit PlayerEliminated(_player);
 	}
 
 	function getPlayers() public view returns (address[] memory) {
