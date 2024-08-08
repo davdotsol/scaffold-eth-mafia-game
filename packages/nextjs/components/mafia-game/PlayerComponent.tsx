@@ -20,6 +20,8 @@ interface PlayerComponentProps {
   setGameOutcome: (story: string) => void;
   setStory: (story: string) => void;
   votingCompleted: boolean | undefined;
+  alivePlayers: Player[];
+  eliminatedPlayers: Player[];
 }
 
 const PlayerComponent: React.FC<PlayerComponentProps> = ({
@@ -28,6 +30,8 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({
   setStory,
   setGameOutcome,
   votingCompleted,
+  alivePlayers,
+  eliminatedPlayers,
 }) => {
   const { address: connectedAddress } = useAccount();
   const currentPlayer = players.find(player => player.addr === connectedAddress);
@@ -38,7 +42,6 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({
   const [accuseAddress, setAccuseAddress] = useState<string>("");
   const [hasAccused, setHasAccused] = useState<{ [key: string]: boolean }>({});
   const [hasVoted, setHasVoted] = useState<{ [key: string]: boolean }>({});
-  const [eliminatedPlayers, setEliminatedPlayers] = useState<Player[]>([]);
   const [accusedPlayers, setAccusedPlayers] = useState<Player[]>([]);
   const [voteAddress, setVoteAddress] = useState<string>("");
   const [mafiaAttack, setMafiaAttack] = useState<string | null>(null);
@@ -86,28 +89,28 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({
     fetchAccusations();
   }, [players, accusationsCount, isLoadingAccusationsCount]);
 
-  useEffect(() => {
-    const fetchEliminatedPlayers = async () => {
-      for (let i = 0; i < players.length; i++) {
-        const player = players[i];
-        const isAlive = await mafiaGameContract?.read.players([player.addr as `0x${string}`]);
-        if (isAlive) {
-          player.alive = isAlive[2];
-          if (!player.alive) {
-            setEliminatedPlayers(prevPlayers => {
-              const playerExists = prevPlayers.some(p => p.addr === player.addr);
-              if (!playerExists) {
-                return [...prevPlayers, player];
-              }
-              return prevPlayers;
-            });
-          }
-        }
-      }
-    };
+  // useEffect(() => {
+  //   const fetchEliminatedPlayers = async () => {
+  //     for (let i = 0; i < players.length; i++) {
+  //       const player = players[i];
+  //       const isAlive = await mafiaGameContract?.read.players([player.addr as `0x${string}`]);
+  //       if (isAlive) {
+  //         player.alive = isAlive[2];
+  //         if (!player.alive) {
+  //           setEliminatedPlayers(prevPlayers => {
+  //             const playerExists = prevPlayers.some(p => p.addr === player.addr);
+  //             if (!playerExists) {
+  //               return [...prevPlayers, player];
+  //             }
+  //             return prevPlayers;
+  //           });
+  //         }
+  //       }
+  //     }
+  //   };
 
-    fetchEliminatedPlayers();
-  }, [players]);
+  //   fetchEliminatedPlayers();
+  // }, [players]);
 
   useScaffoldWatchContractEvent({
     contractName: "MafiaGame",
@@ -143,7 +146,6 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({
     onLogs: logs => {
       logs.forEach(log => {
         const voter = log.args.voter as string;
-        console.log("Voter", voter);
         setHasVoted(prev => ({ ...prev, [voter as `0x${string}`]: true }));
       });
     },
@@ -388,7 +390,7 @@ const PlayerComponent: React.FC<PlayerComponentProps> = ({
           <>
             <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Players</h2>
             <PlayerList
-              players={players.filter(player => player.addr !== connectedAddress && player.alive)}
+              players={alivePlayers.filter(player => player.addr !== connectedAddress && player.alive)}
               showRoles={false}
             />
           </>

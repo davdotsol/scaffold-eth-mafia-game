@@ -10,9 +10,13 @@ interface MayorComponentProps {
   gameStarted: boolean | undefined;
   handleStartGame: () => void;
   handleNextPhase: () => void;
+  handleCheckWin: () => void;
   phase: string | undefined;
   votingCompleted: boolean | undefined;
   playerEliminated: boolean | undefined;
+  alivePlayers: { addr: string; role: string; alive: boolean }[];
+  eliminatedPlayers: { addr: string; role: string; alive: boolean }[];
+  winChecked: boolean;
 }
 
 const MayorComponent: React.FC<MayorComponentProps> = ({
@@ -20,24 +24,18 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
   gameStarted,
   handleStartGame,
   handleNextPhase,
+  handleCheckWin,
   phase,
   votingCompleted,
   playerEliminated,
+  alivePlayers,
+  eliminatedPlayers,
+  winChecked,
 }) => {
   const { targetNetwork } = useTargetNetwork();
   const isLocalNetwork = targetNetwork.id === hardhat.id;
 
   const { writeContractAsync } = useScaffoldWriteContract("MafiaGame");
-
-  const handleCheckWin = async () => {
-    try {
-      await writeContractAsync({
-        functionName: "checkWin",
-      });
-    } catch (error) {
-      console.error("Error executing checkWin", error);
-    }
-  };
 
   const handleEliminatePlayer = async () => {
     try {
@@ -90,8 +88,25 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
             >
               Check Win
             </button>
+            <button
+              className={`btn rounded-md btn-primary ${!winChecked ? "btn-disabled" : ""}`}
+              onClick={handleNextPhase}
+              disabled={!winChecked}
+            >
+              Next Phase
+            </button>
           </div>
-          <PlayerList players={players} showRoles={true} />
+
+          <div>
+            <h2 className="text-2xl font-semibold">Alive Players</h2>
+            <PlayerList players={alivePlayers} showRoles={true} />
+          </div>
+          {eliminatedPlayers.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-semibold text-red-500">Eliminated Players</h2>
+              <PlayerList players={eliminatedPlayers} showRoles={true} />
+            </div>
+          )}
         </div>
       )}
     </div>

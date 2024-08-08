@@ -24,6 +24,7 @@ contract MafiaGame {
 	uint public playerCount;
 	uint public mafiaCount;
 	uint public phaseStartTime;
+	uint public cycleCount; // Added to count the number of cycles
 	Phase public currentPhase;
 	mapping(address => Player) public players;
 	mapping(address => address) public accusations;
@@ -70,6 +71,7 @@ contract MafiaGame {
 		mayor = msg.sender;
 		currentPhase = Phase.Night;
 		phaseStartTime = block.timestamp;
+		cycleCount = 0; // Initialize cycleCount
 	}
 
 	function joinGame() public {
@@ -145,6 +147,7 @@ contract MafiaGame {
 			resetAccusationsAndVotes();
 		}
 		phaseStartTime = block.timestamp;
+		cycleCount++; // Increment cycleCount on each phase change
 		target = address(0);
 		saved = address(0);
 		investigated = address(0);
@@ -260,6 +263,7 @@ contract MafiaGame {
 		saved = address(0);
 		investigated = address(0);
 		story = "";
+		cycleCount = 0; // Reset cycleCount on game reset
 
 		emit PhaseChanged(currentPhase, story);
 	}

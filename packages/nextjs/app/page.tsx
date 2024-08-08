@@ -40,6 +40,9 @@ const Home: NextPage = () => {
   const [story, setStory] = useState<string>("");
   const [votingCompleted, setVotingCompleted] = useState<boolean>(false);
   const [playerEliminated, setPlayerEliminated] = useState<boolean>(false);
+  const [alivePlayers, setAlivePlayers] = useState<Player[]>([]);
+  const [eliminatedPlayers, setEliminatedPlayers] = useState<Player[]>([]);
+  const [winChecked, setWinChecked] = useState<boolean>(false);
   const { address: connectedAddress } = useAccount();
   const { setTheme } = useTheme();
 
@@ -62,7 +65,7 @@ const Home: NextPage = () => {
     functionName: "gameStarted",
   });
 
-  const { data: phase, isLoading: isLoadingPhase } = useScaffoldReadContract({
+  const { data: phase } = useScaffoldReadContract({
     contractName: "MafiaGame",
     functionName: "currentPhase",
   });
@@ -81,7 +84,6 @@ const Home: NextPage = () => {
             role: "",
             alive: true,
           };
-          // console.log("📡 PlayerJoined event", player);
           setPlayers(prevPlayers => {
             const playerExists = prevPlayers.some(p => p.addr === player.addr);
             if (!playerExists) {
@@ -102,7 +104,6 @@ const Home: NextPage = () => {
         const playerAddress: string | undefined = log.args.player;
         const roleNumber: number | undefined = log.args.role;
         if (playerAddress && roleNumber !== undefined) {
-          // console.log("📡 RoleAssigned event", playerAddress, roleNumber);
           const roleName = roleMapping[roleNumber];
           setPlayers(prevPlayers =>
             prevPlayers.map(player => (player.addr === playerAddress ? { ...player, role: roleName } : player)),
@@ -141,6 +142,8 @@ const Home: NextPage = () => {
         );
         setPlayers(updatedPlayers);
         setPlayerEliminated(true);
+        setAlivePlayers(updatedPlayers.filter(player => player.alive));
+        setEliminatedPlayers(updatedPlayers.filter(player => !player.alive));
       });
     },
   });
@@ -165,18 +168,17 @@ const Home: NextPage = () => {
         return;
       }
       try {
-        // const playersAddress = await readPlayersAddress();
         const _players: Player[] = [];
-
         for (let i = 0; i < playersAddress.length; i++) {
           const player = await mafiaGameContract?.read.players([playersAddress[i]]);
-          console.log("player", player);
           if (player) {
             const roleName = roleMapping[player[1]];
             _players.push({ addr: player[0], role: roleName, alive: player[2] });
           }
         }
         setPlayers(_players);
+        setAlivePlayers(_players.filter(player => player.alive));
+        setEliminatedPlayers(_players.filter(player => !player.alive));
       } catch (error) {
         console.error("Error fetching players", error);
       }
@@ -196,10 +198,8 @@ const Home: NextPage = () => {
   const isMayor = useMemo(() => connectedAddress === mayorAddress, [connectedAddress, mayorAddress]);
 
   useEffect(() => {
-    console.log("useEffect phase:", isLoadingPhase);
     if (phase != undefined) {
       const phaseName = phaseMapping[phase];
-      console.log("useEffect phase:", phaseName);
       setCurrentPhase(phaseName);
       if (phaseName === "Day") {
         setTheme("light");
@@ -207,7 +207,7 @@ const Home: NextPage = () => {
       }
       setTheme("dark");
     }
-  }, [phase, isLoadingPhase]);
+  }, [phase]);
 
   const handleJoinGame = async () => {
     try {
@@ -252,11 +252,30 @@ const Home: NextPage = () => {
         {
           onBlockConfirmation: txnReceipt => {
             console.log("📦 Transaction blockHash", txnReceipt.blockHash);
+            setWinChecked(false); // Reset winChecked for the next round
           },
         },
       );
     } catch (e) {
-      console.error("Error starting the game", e);
+      console.error("Error advancing to the next phase", e);
+    }
+  };
+
+  const handleCheckWin = async () => {
+    try {
+      await writeContractAsync(
+        {
+          functionName: "checkWin",
+        },
+        {
+          onBlockConfirmation: txnReceipt => {
+            console.log("📦 Transaction blockHash", txnReceipt.blockHash);
+            setWinChecked(true);
+          },
+        },
+      );
+    } catch (e) {
+      console.error("Error checking win status", e);
     }
   };
 
@@ -265,6 +284,15 @@ const Home: NextPage = () => {
       {!isMayor && !gameStarted && (
         <JoinGameComponent players={players} handleJoinGame={handleJoinGame} hasJoined={hasJoined} />
       )}
+
+      {gameOutcome && (
+        <div className="w-full max-w-3xl space-y-6">
+          <div className="mt-4 p-4 border rounded-md">
+            <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
+            {story && <p>{story}</p>}
+          </div>
+        </div>
+      )}
       {!isMayor && gameStarted && (
         <PlayerComponent
           players={players}
@@ -272,6 +300,8 @@ const Home: NextPage = () => {
           setGameOutcome={setGameOutcome}
           setStory={setStory}
           votingCompleted={votingCompleted}
+          alivePlayers={alivePlayers}
+          eliminatedPlayers={eliminatedPlayers}
         />
       )}
       {isMayor && (
@@ -280,18 +310,14 @@ const Home: NextPage = () => {
           gameStarted={gameStarted}
           handleStartGame={handleStartGame}
           handleNextPhase={handleNextPhase}
+          handleCheckWin={handleCheckWin}
           phase={currentPhase}
           votingCompleted={votingCompleted}
           playerEliminated={playerEliminated}
+          alivePlayers={alivePlayers}
+          eliminatedPlayers={eliminatedPlayers}
+          winChecked={winChecked}
         />
-      )}
-      {gameOutcome && (
-        <div className="w-full max-w-3xl space-y-6">
-          <div className="mt-4 p-4 border rounded-md">
-            <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
-            {story && <p>{story}</p>}
-          </div>
-        </div>
       )}
     </div>
   );
