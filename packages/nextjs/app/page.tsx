@@ -39,10 +39,13 @@ const Home: NextPage = () => {
   const [gameOutcome, setGameOutcome] = useState<string>("");
   const [story, setStory] = useState<string>("");
   const [votingCompleted, setVotingCompleted] = useState<boolean>(false);
+  const [accusationCompleted, setAccusationCompleted] = useState<boolean>(false);
   const [playerEliminated, setPlayerEliminated] = useState<boolean>(false);
   const [alivePlayers, setAlivePlayers] = useState<Player[]>([]);
+  const [accusedPlayers, setAccusedPlayers] = useState<Player[]>([]);
   const [eliminatedPlayers, setEliminatedPlayers] = useState<Player[]>([]);
   const [winChecked, setWinChecked] = useState<boolean>(false);
+  const [hasAccused, setHasAccused] = useState<{ [key: string]: boolean }>({});
   const { address: connectedAddress } = useAccount();
   const { setTheme } = useTheme();
 
@@ -50,9 +53,19 @@ const Home: NextPage = () => {
     contractName: "MafiaGame",
   });
 
+  const { data: accusationsCount, isLoading: isLoadingAccusationsCount } = useScaffoldReadContract({
+    contractName: "MafiaGame",
+    functionName: "accusationsCount",
+  });
+
   const { data: playersAddress, isLoading: isLoadingPlayersAddress } = useScaffoldReadContract({
     contractName: "MafiaGame",
     functionName: "getPlayers",
+  });
+
+  const { data: accusedPlayersAddress, isLoading: isLoadingAccusedPlayersAddress } = useScaffoldReadContract({
+    contractName: "MafiaGame",
+    functionName: "getAccusedPlayers",
   });
 
   const { data: mayorAddress } = useScaffoldReadContract({
@@ -103,11 +116,15 @@ const Home: NextPage = () => {
       logs.forEach(log => {
         const playerAddress: string | undefined = log.args.player;
         const roleNumber: number | undefined = log.args.role;
+        console.log(`Player address ${playerAddress} - Role ${roleNumber} ${roleMapping[roleNumber]}`);
         if (playerAddress && roleNumber !== undefined) {
           const roleName = roleMapping[roleNumber];
-          setPlayers(prevPlayers =>
-            prevPlayers.map(player => (player.addr === playerAddress ? { ...player, role: roleName } : player)),
+          const updatedPlayers = players.map(player =>
+            player.addr === playerAddress ? { ...player, role: roleName } : player,
           );
+          setPlayers(updatedPlayers);
+          setAlivePlayers(updatedPlayers.filter(player => player.alive));
+          setEliminatedPlayers(updatedPlayers.filter(player => !player.alive));
         }
       });
     },
@@ -161,6 +178,22 @@ const Home: NextPage = () => {
     },
   });
 
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "AccusationCompleted",
+    onLogs: () => {
+      console.log("AccusationCompleted");
+      setAccusationCompleted(true);
+    },
+  });
+
+  useEffect(() => {
+    console.log(accusationsCount, isLoadingAccusationsCount);
+    if (!isLoadingAccusationsCount) {
+      setAccusationCompleted(Number(accusationsCount) === players.length);
+    }
+  }, [accusationsCount, isLoadingAccusationsCount, players]);
+
   useEffect(() => {
     const fetchPlayers = async () => {
       if (!playersAddress) {
@@ -190,6 +223,40 @@ const Home: NextPage = () => {
   }, [playersAddress, isLoadingPlayersAddress]);
 
   useEffect(() => {
+    if (isLoadingAccusedPlayersAddress) {
+      return;
+    }
+
+    if (!accusedPlayersAddress || accusedPlayersAddress.length === 0) {
+      console.error("accusedPlayersAddress is undefined or empty");
+      return;
+    }
+
+    try {
+      const _accusedPlayers: Player[] = [];
+
+      accusedPlayersAddress.forEach(addr => {
+        const accusedPlayer = players?.find(player => player.addr === addr);
+
+        // Only add the player if they are not already in the list
+        if (accusedPlayer && !_accusedPlayers.some(player => player.addr === accusedPlayer.addr)) {
+          _accusedPlayers.push(accusedPlayer);
+        }
+      });
+
+      setAccusedPlayers(prevAccusedPlayers => {
+        // Avoid setting state if the players are the same
+        if (JSON.stringify(prevAccusedPlayers) !== JSON.stringify(_accusedPlayers)) {
+          return _accusedPlayers;
+        }
+        return prevAccusedPlayers;
+      });
+    } catch (error) {
+      console.error("Error fetching accused players", error);
+    }
+  }, [accusedPlayersAddress, isLoadingAccusedPlayersAddress, players]);
+
+  useEffect(() => {
     if (connectedAddress) {
       setHasJoined(players.some(player => player.addr === connectedAddress));
     }
@@ -208,6 +275,29 @@ const Home: NextPage = () => {
       setTheme("dark");
     }
   }, [phase]);
+
+  useEffect(() => {
+    const fetchAccusations = async () => {
+      for (let i = 0; i < players.length; i++) {
+        const accused = await mafiaGameContract?.read.accusations([players[i].addr as `0x${string}`]);
+        if (accused && accused !== "0x0000000000000000000000000000000000000000" && players[i].alive) {
+          setHasAccused(prev => ({ ...prev, [players[i].addr]: true }));
+          // const accusedPlayer = players.find(player => player.alive && player.addr === accused);
+          // if (accusedPlayer) {
+          //   setAccusedPlayers(prevPlayers => {
+          //     const playerExists = prevPlayers.some(p => p.addr === accused);
+          //     if (!playerExists) {
+          //       return [...prevPlayers, accusedPlayer];
+          //     }
+          //     return prevPlayers;
+          //   });
+          // }
+        }
+      }
+    };
+
+    fetchAccusations();
+  }, [accusedPlayersAddress, isLoadingAccusedPlayersAddress, players]);
 
   const handleJoinGame = async () => {
     try {
@@ -300,8 +390,11 @@ const Home: NextPage = () => {
           setGameOutcome={setGameOutcome}
           setStory={setStory}
           votingCompleted={votingCompleted}
+          accusationCompleted={accusationCompleted}
           alivePlayers={alivePlayers}
+          accusedPlayers={accusedPlayers}
           eliminatedPlayers={eliminatedPlayers}
+          hasAccused={hasAccused}
         />
       )}
       {isMayor && (

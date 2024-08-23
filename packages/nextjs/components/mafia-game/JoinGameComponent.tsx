@@ -25,7 +25,7 @@ const JoinGameComponent: React.FC<JoinGameComponentProps> = ({ players, handleJo
     <ul className="list-none text-primary-lighter">
       {players.map((player, index) => (
         <li className="mt-5" key={index}>
-          <strong>Player {index}:</strong> {player.addr}
+          <strong>Player {index + 1}:</strong> {player.addr}
         </li>
       ))}
     </ul>
