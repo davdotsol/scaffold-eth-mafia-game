@@ -141,9 +141,15 @@ const Home: NextPage = () => {
         if (phaseNumber !== undefined) {
           const phaseName = phaseMapping[phaseNumber];
           setCurrentPhase(phaseName);
+
           if (phaseName === "Night") {
             setGameOutcome("");
-            setStory("");
+            setStory(
+              prevStory =>
+                prevStory + "The night has begun. The Mafia, Doctor, and Detective are taking their actions.\n",
+            );
+          } else if (phaseName === "Day") {
+            setStory(prevStory => prevStory + "The day has begun. Players are discussing and accusing others.\n");
           }
         }
       });
@@ -169,6 +175,18 @@ const Home: NextPage = () => {
 
   useScaffoldWatchContractEvent({
     contractName: "MafiaGame",
+    eventName: "PlayerAccused",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const accuser = log.args.accuser as string;
+        const accused = log.args.accused as string;
+        setStory(prevStory => prevStory + `Player ${accuser} has accused ${accused}.\n`);
+      });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
     eventName: "VotingCompleted",
     onLogs: logs => {
       logs.forEach(log => {
@@ -182,10 +200,38 @@ const Home: NextPage = () => {
 
   useScaffoldWatchContractEvent({
     contractName: "MafiaGame",
-    eventName: "AccusationCompleted",
-    onLogs: () => {
-      console.log("AccusationCompleted");
-      setAccusationCompleted(true);
+    eventName: "VoteCast",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const voter = log.args.voter as string;
+        const accused = log.args.accused as string;
+        setStory(prevStory => prevStory + `Player ${voter} has voted to eliminate ${accused}.\n`);
+      });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "PlayerEliminated",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const eliminated = log.args.eliminatedPlayer as string;
+        setStory(prevStory => prevStory + `Player ${eliminated} has been eliminated.\n`);
+      });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "GameWon",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const message: string | undefined = log.args.message;
+        if (message) {
+          setGameOutcome(message);
+          setStory(prevStory => `${prevStory}\n${message}\n`);
+        }
+      });
     },
   });
 
@@ -284,16 +330,6 @@ const Home: NextPage = () => {
         const accused = await mafiaGameContract?.read.accusations([players[i].addr as `0x${string}`]);
         if (accused && accused !== "0x0000000000000000000000000000000000000000" && players[i].alive) {
           setHasAccused(prev => ({ ...prev, [players[i].addr]: true }));
-          // const accusedPlayer = players.find(player => player.alive && player.addr === accused);
-          // if (accusedPlayer) {
-          //   setAccusedPlayers(prevPlayers => {
-          //     const playerExists = prevPlayers.some(p => p.addr === accused);
-          //     if (!playerExists) {
-          //       return [...prevPlayers, accusedPlayer];
-          //     }
-          //     return prevPlayers;
-          //   });
-          // }
         }
       }
     };
