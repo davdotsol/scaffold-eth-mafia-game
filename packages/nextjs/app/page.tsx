@@ -46,6 +46,8 @@ const Home: NextPage = () => {
   const [eliminatedPlayers, setEliminatedPlayers] = useState<Player[]>([]);
   const [winChecked, setWinChecked] = useState<boolean>(false);
   const [hasAccused, setHasAccused] = useState<{ [key: string]: boolean }>({});
+  const [hasVoted, setHasVoted] = useState<{ [key: string]: boolean }>({});
+
   const { address: connectedAddress } = useAccount();
   const { setTheme } = useTheme();
 
@@ -299,6 +301,21 @@ const Home: NextPage = () => {
     fetchAccusations();
   }, [accusedPlayersAddress, isLoadingAccusedPlayersAddress, players]);
 
+  useEffect(() => {
+    const fetchVotingStatus = async () => {
+      for (let i = 0; i < players.length; i++) {
+        const voted = await mafiaGameContract?.read.hasVoted([players[i].addr as `0x${string}`]);
+        if (voted) {
+          setHasVoted(prev => ({ ...prev, [players[i].addr]: true }));
+        }
+      }
+    };
+
+    if (phase === "Day") {
+      fetchVotingStatus();
+    }
+  }, [phase, players]);
+
   const handleJoinGame = async () => {
     try {
       await writeContractAsync(
@@ -395,6 +412,8 @@ const Home: NextPage = () => {
           accusedPlayers={accusedPlayers}
           eliminatedPlayers={eliminatedPlayers}
           hasAccused={hasAccused}
+          hasVoted={hasVoted}
+          setHasVoted={setHasVoted}
         />
       )}
       {isMayor && (

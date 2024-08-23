@@ -29,9 +29,11 @@ contract MafiaGame {
 	mapping(address => Player) public players;
 	mapping(address => address) public accusations;
 	mapping(address => uint) public votes;
+	mapping(address => bool) public hasVoted;
 	address[] public accusedPlayers;
 	address[] public playerAddresses;
 	address[] public mafiaAddresses;
+	address[] public eliminatedAddresses;
 	address public mayor;
 	address public target;
 	address public saved;
@@ -145,6 +147,7 @@ contract MafiaGame {
 		} else {
 			currentPhase = Phase.Night;
 			resetAccusationsAndVotes();
+			resetVotingStatus(); // Reset voting status for the new phase
 		}
 		phaseStartTime = block.timestamp;
 		cycleCount++; // Increment cycleCount on each phase change
@@ -154,6 +157,12 @@ contract MafiaGame {
 		votesCast = 0; // Reset the vote count
 		accusationsCount = 0; // Reset the accusations count
 		emit PhaseChanged(currentPhase, story);
+	}
+
+	function resetVotingStatus() internal {
+		for (uint i = 0; i < playerAddresses.length; i++) {
+			hasVoted[playerAddresses[i]] = false; // Reset the hasVoted status
+		}
 	}
 
 	function resetAccusationsAndVotes() internal {
@@ -187,8 +196,11 @@ contract MafiaGame {
 			accusations[_accused] != address(0),
 			"Player must be accused first"
 		);
+		require(!hasVoted[msg.sender], "You have already voted"); // Ensure player hasn't voted
+
 		votes[_accused]++;
 		votesCast++; // Increase the number of votes cast
+		hasVoted[msg.sender] = true; // Mark the player as having voted
 		emit VoteCast(msg.sender, _accused);
 
 		if (votesCast == playerCount) {
@@ -274,5 +286,9 @@ contract MafiaGame {
 
 	function getAccusedPlayers() public view returns (address[] memory) {
 		return accusedPlayers;
+	}
+
+	function getEliminatedPlayers() public view returns (address[] memory) {
+		return eliminatedAddresses;
 	}
 }

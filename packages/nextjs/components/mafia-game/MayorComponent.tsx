@@ -88,13 +88,6 @@ const MayorComponent: React.FC<MayorComponentProps> = ({
             >
               Check Win
             </button>
-            <button
-              className={`btn rounded-md btn-primary ${!winChecked ? "btn-disabled" : ""}`}
-              onClick={handleNextPhase}
-              disabled={!winChecked}
-            >
-              Next Phase
-            </button>
           </div>
 
           <div>
