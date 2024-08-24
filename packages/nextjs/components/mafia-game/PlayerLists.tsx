@@ -3,7 +3,7 @@ import PlayerList from "~~/components/mafia-game/PlayerList";
 
 const PlayerLists = ({ alivePlayers, accusedPlayers, eliminatedPlayers, connectedAddress }) => {
   return (
-    <>
+    <div className="space-y-6">
       <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Players</h2>
       <PlayerList
         players={alivePlayers.filter(player => player.addr !== connectedAddress && player.alive)}
@@ -11,7 +11,7 @@ const PlayerLists = ({ alivePlayers, accusedPlayers, eliminatedPlayers, connecte
       />
       {accusedPlayers.length > 0 && (
         <>
-          <h2 className="text-2xl font-semibold mb-4 text-primary-lighter">Accused Players</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-yellow-500">Accused Players</h2>
           <PlayerList
             players={accusedPlayers.filter(player => player.addr !== connectedAddress && player.alive)}
             showRoles={false}
@@ -24,7 +24,7 @@ const PlayerLists = ({ alivePlayers, accusedPlayers, eliminatedPlayers, connecte
           <PlayerList players={eliminatedPlayers} showRoles={true} />
         </>
       )}
-    </>
+    </div>
   );
 };
 

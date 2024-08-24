@@ -9,7 +9,6 @@ import { useScaffoldContract, useScaffoldWatchContractEvent, useScaffoldWriteCon
 const PlayerComponent = ({
   players,
   phase,
-  setStory,
   setGameOutcome,
   votingCompleted,
   accusationCompleted,
@@ -65,14 +64,14 @@ const PlayerComponent = ({
     }
   };
 
-  const handleAccuse = async () => {
+  const handleAccuse = async (reason: string) => {
     if (accuseAddress) {
       try {
         await writeContractAsync({
           functionName: "accusePlayer",
-          args: [accuseAddress as `0x${string}`],
+          args: [accuseAddress as `0x${string}`, reason],
         });
-        setAccuseAddress("");
+        setAccuseAddress(""); // Clear the accused address input
       } catch (error) {
         console.error("Error executing accusePlayer", error);
       }
@@ -89,11 +88,12 @@ const PlayerComponent = ({
         {
           onBlockConfirmation: txnReceipt => {
             console.log("📦 Transaction blockHash", txnReceipt.blockHash);
-            setHasVoted(prev => ({ ...prev, [connectedAddress as `0x${string}`]: true }));
-            setVoteAddress("");
           },
         },
       );
+
+      setHasVoted(prev => ({ ...prev, [connectedAddress as `0x${string}`]: true }));
+      setVoteAddress("");
     } catch (error) {
       console.error("Error voting for elimination", error);
     }
@@ -135,6 +135,7 @@ const PlayerComponent = ({
             handleVote={handleVote}
             hasVoted={hasVoted}
             votingCompleted={votingCompleted}
+            accusedPlayers={accusedPlayers}
           />
         )}
         <PlayerLists

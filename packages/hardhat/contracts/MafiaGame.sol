@@ -30,6 +30,7 @@ contract MafiaGame {
 	mapping(address => address) public accusations;
 	mapping(address => uint) public votes;
 	mapping(address => bool) public hasVoted;
+	mapping(address => string[]) public accusationReasons; // New mapping to store reasons
 	address[] public accusedPlayers;
 	address[] public playerAddresses;
 	address[] public mafiaAddresses;
@@ -173,7 +174,10 @@ contract MafiaGame {
 		delete accusedPlayers;
 	}
 
-	function accusePlayer(address _accused) public onlyAlive {
+	function accusePlayer(
+		address _accused,
+		string memory _reason
+	) public onlyAlive {
 		require(currentPhase == Phase.Day, "Can only accuse during day phase");
 		require(
 			accusations[msg.sender] == address(0),
@@ -181,6 +185,7 @@ contract MafiaGame {
 		);
 
 		accusations[msg.sender] = _accused;
+		accusationReasons[_accused].push(_reason); // Store the reason
 		accusedPlayers.push(_accused);
 		accusationsCount++;
 		emit PlayerAccused(msg.sender, _accused);
@@ -188,6 +193,12 @@ contract MafiaGame {
 		if (accusationsCount == playerCount) {
 			emit AccusationCompleted();
 		}
+	}
+
+	function getAccusationReasons(
+		address _accused
+	) public view returns (string[] memory) {
+		return accusationReasons[_accused];
 	}
 
 	function voteForElimination(address _accused) public onlyAlive {

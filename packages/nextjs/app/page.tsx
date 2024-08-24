@@ -47,6 +47,12 @@ const Home: NextPage = () => {
   const [winChecked, setWinChecked] = useState<boolean>(false);
   const [hasAccused, setHasAccused] = useState<{ [key: string]: boolean }>({});
   const [hasVoted, setHasVoted] = useState<{ [key: string]: boolean }>({});
+  // const [lastProcessedBlockPhaseChanged, setLastProcessedBlockPhaseChanged] = useState<Number>(0);
+  // const [lastProcessedBlockPlayerAccused, setLastProcessedBlockPlayerAccused] = useState<Number>(0);
+  // const [lastProcessedBlockVoteCast, setLastProcessedBlockVoteCast] = useState<Number>(0);
+  // const [lastProcessedBlockPlayerEliminated, setLastProcessedBlockPlayerEliminated] = useState<Number>(0);
+  // const [lastProcessedBlockGameWon, setLastProcessedBlockGameWon] = useState<Number>(0);
+  const [processedEventHashes, setProcessedEventHashes] = useState<string[]>([]);
 
   const { address: connectedAddress } = useAccount();
   const { setTheme } = useTheme();
@@ -116,17 +122,21 @@ const Home: NextPage = () => {
     eventName: "RoleAssigned",
     onLogs: logs => {
       logs.forEach(log => {
-        const playerAddress: string | undefined = log.args.player;
-        const roleNumber: number | undefined = log.args.role;
-        console.log(`Player address ${playerAddress} - Role ${roleNumber} ${roleMapping[roleNumber]}`);
-        if (playerAddress && roleNumber !== undefined) {
-          const roleName = roleMapping[roleNumber];
-          const updatedPlayers = players.map(player =>
-            player.addr === playerAddress ? { ...player, role: roleName } : player,
-          );
-          setPlayers(updatedPlayers);
-          setAlivePlayers(updatedPlayers.filter(player => player.alive));
-          setEliminatedPlayers(updatedPlayers.filter(player => !player.alive));
+        const txHash = log.transactionHash;
+        if (!processedEventHashes.includes(txHash)) {
+          const playerAddress: string | undefined = log.args.player;
+          const roleNumber: number | undefined = log.args.role;
+          console.log(`Player address ${playerAddress} - Role ${roleNumber}`);
+          if (playerAddress && roleNumber !== undefined) {
+            const roleName = roleMapping[roleNumber];
+            const updatedPlayers = players.map(player =>
+              player.addr === playerAddress ? { ...player, role: roleName } : player,
+            );
+            setPlayers(updatedPlayers);
+            setAlivePlayers(updatedPlayers.filter(player => player.alive));
+            setEliminatedPlayers(updatedPlayers.filter(player => !player.alive));
+          }
+          setProcessedEventHashes(prevHashes => [...prevHashes, txHash]); // Store the processed hash
         }
       });
     },
@@ -137,20 +147,25 @@ const Home: NextPage = () => {
     eventName: "PhaseChanged",
     onLogs: logs => {
       logs.forEach(log => {
-        const phaseNumber: number | undefined = log.args.newPhase;
-        if (phaseNumber !== undefined) {
-          const phaseName = phaseMapping[phaseNumber];
-          setCurrentPhase(phaseName);
+        const txHash = log.transactionHash;
+        if (!processedEventHashes.includes(txHash)) {
+          console.log("Phase changed", txHash);
+          const phaseNumber: number | undefined = log.args.newPhase;
+          if (phaseNumber !== undefined) {
+            const phaseName = phaseMapping[phaseNumber];
+            setCurrentPhase(phaseName);
 
-          if (phaseName === "Night") {
-            setGameOutcome("");
-            setStory(
-              prevStory =>
-                prevStory + "The night has begun. The Mafia, Doctor, and Detective are taking their actions.\n",
-            );
-          } else if (phaseName === "Day") {
-            setStory(prevStory => prevStory + "The day has begun. Players are discussing and accusing others.\n");
+            if (phaseName === "Night") {
+              setGameOutcome("");
+              setStory(
+                prevStory =>
+                  prevStory + "The night has begun. The Mafia, Doctor, and Detective are taking their actions.\n",
+              );
+            } else if (phaseName === "Day") {
+              setStory(prevStory => prevStory + "The day has begun. Players are discussing and accusing others.\n");
+            }
           }
+          setProcessedEventHashes(prevHashes => [...prevHashes, txHash]); // Store the processed hash
         }
       });
     },
@@ -178,9 +193,14 @@ const Home: NextPage = () => {
     eventName: "PlayerAccused",
     onLogs: logs => {
       logs.forEach(log => {
-        const accuser = log.args.accuser as string;
-        const accused = log.args.accused as string;
-        setStory(prevStory => prevStory + `Player ${accuser} has accused ${accused}.\n`);
+        const txHash = log.transactionHash;
+        if (!processedEventHashes.includes(txHash)) {
+          console.log("Player Accused", txHash);
+          const accuser = log.args.accuser as string;
+          const accused = log.args.accused as string;
+          setStory(prevStory => prevStory + `Player ${accuser} has accused ${accused}.\n`);
+          setProcessedEventHashes(txHash); // Update the last processed block number
+        }
       });
     },
   });
@@ -203,9 +223,14 @@ const Home: NextPage = () => {
     eventName: "VoteCast",
     onLogs: logs => {
       logs.forEach(log => {
-        const voter = log.args.voter as string;
-        const accused = log.args.accused as string;
-        setStory(prevStory => prevStory + `Player ${voter} has voted to eliminate ${accused}.\n`);
+        const txHash = log.transactionHash;
+        if (!processedEventHashes.includes(txHash)) {
+          console.log("Vote Cast", txHash);
+          const voter = log.args.voter as string;
+          const accused = log.args.accused as string;
+          setStory(prevStory => prevStory + `Player ${voter} has voted to eliminate ${accused}.\n`);
+          setProcessedEventHashes(txHash); // Update last processed block
+        }
       });
     },
   });
@@ -215,8 +240,13 @@ const Home: NextPage = () => {
     eventName: "PlayerEliminated",
     onLogs: logs => {
       logs.forEach(log => {
-        const eliminated = log.args.eliminatedPlayer as string;
-        setStory(prevStory => prevStory + `Player ${eliminated} has been eliminated.\n`);
+        const txHash = log.transactionHash;
+        if (!processedEventHashes.includes(txHash)) {
+          console.log("Player Eliminated", txHash);
+          const eliminated = log.args.eliminatedPlayer as string;
+          setStory(prevStory => prevStory + `Player ${eliminated} has been eliminated.\n`);
+          setProcessedEventHashes(txHash); // Update last processed block
+        }
       });
     },
   });
@@ -226,17 +256,36 @@ const Home: NextPage = () => {
     eventName: "GameWon",
     onLogs: logs => {
       logs.forEach(log => {
-        const message: string | undefined = log.args.message;
-        if (message) {
-          setGameOutcome(message);
-          setStory(prevStory => `${prevStory}\n${message}\n`);
+        const txHash = log.transactionHash;
+        if (!processedEventHashes.includes(txHash)) {
+          console.log("Game Won", txHash);
+          const message: string | undefined = log.args.message;
+          if (message) {
+            setGameOutcome(message);
+            setStory(prevStory => `${prevStory}\n${message}\n`);
+          }
+          setProcessedEventHashes(txHash); // Update last processed block
+        }
+      });
+    },
+  });
+
+  useScaffoldWatchContractEvent({
+    contractName: "MafiaGame",
+    eventName: "GameContinue",
+    onLogs: logs => {
+      logs.forEach(log => {
+        const txHash = log.transactionHash;
+        if (!processedEventHashes.includes(txHash)) {
+          console.log("Game Continue", txHash);
+          setGameOutcome("The Game Continue\n");
+          setProcessedEventHashes(txHash); // Update last processed block
         }
       });
     },
   });
 
   useEffect(() => {
-    console.log(accusationsCount, isLoadingAccusationsCount);
     if (!isLoadingAccusationsCount) {
       setAccusationCompleted(Number(accusationsCount) === players.length);
     }
@@ -276,7 +325,6 @@ const Home: NextPage = () => {
     }
 
     if (!accusedPlayersAddress || accusedPlayersAddress.length === 0) {
-      console.error("accusedPlayersAddress is undefined or empty");
       return;
     }
 
@@ -413,6 +461,7 @@ const Home: NextPage = () => {
         {
           onBlockConfirmation: txnReceipt => {
             console.log("📦 Transaction blockHash", txnReceipt.blockHash);
+            console.log("Game outcome", gameOutcome, " story", story);
             setWinChecked(true);
           },
         },
@@ -441,7 +490,6 @@ const Home: NextPage = () => {
           players={players}
           phase={currentPhase}
           setGameOutcome={setGameOutcome}
-          setStory={setStory}
           votingCompleted={votingCompleted}
           accusationCompleted={accusationCompleted}
           alivePlayers={alivePlayers}

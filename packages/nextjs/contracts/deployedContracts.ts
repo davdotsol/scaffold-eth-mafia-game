@@ -178,6 +178,30 @@ const deployedContracts = {
               name: "",
               type: "address",
             },
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          name: "accusationReasons",
+          outputs: [
+            {
+              internalType: "string",
+              name: "",
+              type: "string",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
           ],
           name: "accusations",
           outputs: [
@@ -209,6 +233,11 @@ const deployedContracts = {
               internalType: "address",
               name: "_accused",
               type: "address",
+            },
+            {
+              internalType: "string",
+              name: "_reason",
+              type: "string",
             },
           ],
           name: "accusePlayer",
@@ -302,6 +331,25 @@ const deployedContracts = {
               internalType: "bool",
               name: "",
               type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_accused",
+              type: "address",
+            },
+          ],
+          name: "getAccusationReasons",
+          outputs: [
+            {
+              internalType: "string[]",
+              name: "",
+              type: "string[]",
             },
           ],
           stateMutability: "view",
