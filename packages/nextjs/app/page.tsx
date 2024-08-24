@@ -332,7 +332,11 @@ const Home: NextPage = () => {
       const _accusedPlayers: Player[] = [];
 
       accusedPlayersAddress.forEach(addr => {
-        const accusedPlayer = players?.find(player => player.addr === addr);
+        const accusedPlayer = players
+          ?.filter(player => {
+            return player.addr !== connectedAddress && player.alive;
+          })
+          ?.find(player => player.addr === addr);
 
         // Only add the player if they are not already in the list
         if (accusedPlayer && !_accusedPlayers.some(player => player.addr === accusedPlayer.addr)) {
@@ -350,7 +354,7 @@ const Home: NextPage = () => {
     } catch (error) {
       console.error("Error fetching accused players", error);
     }
-  }, [accusedPlayersAddress, isLoadingAccusedPlayersAddress, players]);
+  }, [accusedPlayersAddress, isLoadingAccusedPlayersAddress, connectedAddress, players]);
 
   useEffect(() => {
     if (connectedAddress) {

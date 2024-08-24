@@ -12,10 +12,7 @@ const PlayerLists = ({ alivePlayers, accusedPlayers, eliminatedPlayers, connecte
       {accusedPlayers.length > 0 && (
         <>
           <h2 className="text-2xl font-semibold mb-4 text-yellow-500">Accused Players</h2>
-          <PlayerList
-            players={accusedPlayers.filter(player => player.addr !== connectedAddress && player.alive)}
-            showRoles={false}
-          />
+          <PlayerList players={accusedPlayers} showRoles={false} />
         </>
       )}
       {eliminatedPlayers.length > 0 && (
