@@ -4,12 +4,11 @@ import AccusationComponent from "~~/components/mafia-game/AccusationComponent";
 import CurrentPlayerInfo from "~~/components/mafia-game/CurrentPlayerInfo";
 import PlayerLists from "~~/components/mafia-game/PlayerLists";
 import VotingComponent from "~~/components/mafia-game/VotingComponent";
-import { useScaffoldContract, useScaffoldWatchContractEvent, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 
 const PlayerComponent = ({
   players,
   phase,
-  setGameOutcome,
   votingCompleted,
   accusationCompleted,
   alivePlayers,
@@ -18,6 +17,7 @@ const PlayerComponent = ({
   hasAccused,
   hasVoted,
   setHasVoted,
+  setHasAccused,
 }) => {
   const { address: connectedAddress } = useAccount();
   const currentPlayer = players.find(player => player.addr === connectedAddress);
@@ -67,11 +67,18 @@ const PlayerComponent = ({
   const handleAccuse = async (reason: string) => {
     if (accuseAddress) {
       try {
-        await writeContractAsync({
-          functionName: "accusePlayer",
-          args: [accuseAddress as `0x${string}`, reason],
-        });
-        setAccuseAddress(""); // Clear the accused address input
+        await writeContractAsync(
+          {
+            functionName: "accusePlayer",
+            args: [accuseAddress as `0x${string}`, reason],
+          },
+          {
+            onBlockConfirmation: txnReceipt => {
+              console.log("📦 Transaction blockHash", txnReceipt.blockHash);
+              setHasAccused(prev => ({ ...prev, [connectedAddress as `0x${string}`]: true }));
+            },
+          },
+        );
       } catch (error) {
         console.error("Error executing accusePlayer", error);
       }
@@ -88,11 +95,11 @@ const PlayerComponent = ({
         {
           onBlockConfirmation: txnReceipt => {
             console.log("📦 Transaction blockHash", txnReceipt.blockHash);
+            setHasVoted(prev => ({ ...prev, [connectedAddress as `0x${string}`]: true }));
           },
         },
       );
 
-      setHasVoted(prev => ({ ...prev, [connectedAddress as `0x${string}`]: true }));
       setVoteAddress("");
     } catch (error) {
       console.error("Error voting for elimination", error);

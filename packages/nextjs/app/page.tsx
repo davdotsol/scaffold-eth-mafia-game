@@ -493,7 +493,6 @@ const Home: NextPage = () => {
         <PlayerComponent
           players={players}
           phase={currentPhase}
-          setGameOutcome={setGameOutcome}
           votingCompleted={votingCompleted}
           accusationCompleted={accusationCompleted}
           alivePlayers={alivePlayers}
@@ -502,6 +501,7 @@ const Home: NextPage = () => {
           hasAccused={hasAccused}
           hasVoted={hasVoted}
           setHasVoted={setHasVoted}
+          setHasAccused={setHasAccused}
         />
       )}
       {isMayor && (

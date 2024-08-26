@@ -47,6 +47,11 @@ const VotingComponent: React.FC<VotingComponentProps> = ({
     }
   }, [accusedPlayers]);
 
+  const onVoteClick = () => {
+    handleVote(); // Pass the reason to the handleAccuse function
+    setVoteAddress(""); // Clear the accused address input
+  };
+
   return (
     <div className="mb-4 p-4 border rounded-lg bg-white shadow-lg w-full max-w-3xl flex flex-col space-y-6">
       <h2 className="text-2xl font-semibold text-gray-800">Vote to Eliminate</h2>
@@ -73,7 +78,7 @@ const VotingComponent: React.FC<VotingComponentProps> = ({
           disabled={hasVoted[connectedAddress] || votingCompleted}
         />
         <button
-          onClick={handleVote}
+          onClick={onVoteClick}
           className={`btn rounded-md btn-primary ${hasVoted[connectedAddress] || votingCompleted ? "btn-disabled" : ""}`}
           disabled={hasVoted[connectedAddress] || votingCompleted}
         >

@@ -19,6 +19,7 @@ const AccusationComponent: React.FC<AccusationComponentProps> = ({
 
   const onAccuseClick = () => {
     handleAccuse(reason); // Pass the reason to the handleAccuse function
+    setAccuseAddress(""); // Clear the accused address input
     setReason(""); // Clear the reason input after accusation
   };
 
