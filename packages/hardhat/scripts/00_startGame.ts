@@ -28,8 +28,8 @@ async function main() {
   console.log("Player 4 has joined the game:", player4.address);
 
   // Start the game
-  await mafiaGame.connect(deployerSigner).startGame();
-  console.log("Game has started by the mayor:", deployerSigner.address);
+  // await mafiaGame.connect(deployerSigner).startGame();
+  // console.log("Game has started by the mayor:", deployerSigner.address);
 }
 
 main()

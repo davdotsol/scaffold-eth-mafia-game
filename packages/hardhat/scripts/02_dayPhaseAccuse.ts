@@ -19,16 +19,16 @@ async function main() {
   console.log("Phase changed to Day by the mayor:", deployerSigner.address);
 
   // Each player accuses another player
-  await mafiaGame.connect(player1).accusePlayer(player2.address);
+  await mafiaGame.connect(player1).accusePlayer(player2.address, "Reason for player 1 to accuse player 2");
   console.log("Player 1 accused Player 2");
 
-  await mafiaGame.connect(player2).accusePlayer(player3.address);
+  await mafiaGame.connect(player2).accusePlayer(player3.address, "Reason for player 2 to accuse player 3");
   console.log("Player 2 accused Player 3");
 
-  await mafiaGame.connect(player3).accusePlayer(player4.address);
+  await mafiaGame.connect(player3).accusePlayer(player4.address, "Reason for player 3 to accuse player 4");
   console.log("Player 3 accused Player 4");
 
-  await mafiaGame.connect(player4).accusePlayer(player1.address);
+  await mafiaGame.connect(player4).accusePlayer(player1.address, "Reason for player 4 to accuse player 1");
   console.log("Player 4 accused Player 1");
 }
 

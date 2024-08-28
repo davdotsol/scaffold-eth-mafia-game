@@ -263,7 +263,7 @@ contract MafiaGame {
 		}
 	}
 
-	function resetGame() public onlyMayor {
+	function resetGame() private onlyMayor {
 		for (uint i = 0; i < playerAddresses.length; i++) {
 			delete players[playerAddresses[i]];
 			delete accusations[playerAddresses[i]];

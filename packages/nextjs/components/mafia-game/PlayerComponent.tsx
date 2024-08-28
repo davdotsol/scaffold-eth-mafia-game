@@ -18,6 +18,9 @@ const PlayerComponent = ({
   hasVoted,
   setHasVoted,
   setHasAccused,
+  setDetectiveInvestigation,
+  setDoctorSave,
+  setMafiaAttack,
 }) => {
   const { address: connectedAddress } = useAccount();
   const currentPlayer = players.find(player => player.addr === connectedAddress);
@@ -27,9 +30,6 @@ const PlayerComponent = ({
   const [targetAddress, setTargetAddress] = useState("");
   const [accuseAddress, setAccuseAddress] = useState("");
   const [voteAddress, setVoteAddress] = useState("");
-  const [mafiaAttack, setMafiaAttack] = useState(null);
-  const [doctorSave, setDoctorSave] = useState(null);
-  const [detectiveInvestigation, setDetectiveInvestigation] = useState(null);
 
   const { writeContractAsync } = useScaffoldWriteContract("MafiaGame");
 
@@ -74,7 +74,6 @@ const PlayerComponent = ({
           },
           {
             onBlockConfirmation: txnReceipt => {
-              console.log("📦 Transaction blockHash", txnReceipt.blockHash);
               setHasAccused(prev => ({ ...prev, [connectedAddress as `0x${string}`]: true }));
             },
           },
@@ -94,7 +93,6 @@ const PlayerComponent = ({
         },
         {
           onBlockConfirmation: txnReceipt => {
-            console.log("📦 Transaction blockHash", txnReceipt.blockHash);
             setHasVoted(prev => ({ ...prev, [connectedAddress as `0x${string}`]: true }));
           },
         },

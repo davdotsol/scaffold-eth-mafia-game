@@ -574,13 +574,6 @@ const deployedContracts = {
         },
         {
           inputs: [],
-          name: "resetGame",
-          outputs: [],
-          stateMutability: "nonpayable",
-          type: "function",
-        },
-        {
-          inputs: [],
           name: "saved",
           outputs: [
             {

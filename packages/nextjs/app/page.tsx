@@ -47,12 +47,11 @@ const Home: NextPage = () => {
   const [winChecked, setWinChecked] = useState<boolean>(false);
   const [hasAccused, setHasAccused] = useState<{ [key: string]: boolean }>({});
   const [hasVoted, setHasVoted] = useState<{ [key: string]: boolean }>({});
-  // const [lastProcessedBlockPhaseChanged, setLastProcessedBlockPhaseChanged] = useState<Number>(0);
-  // const [lastProcessedBlockPlayerAccused, setLastProcessedBlockPlayerAccused] = useState<Number>(0);
-  // const [lastProcessedBlockVoteCast, setLastProcessedBlockVoteCast] = useState<Number>(0);
-  // const [lastProcessedBlockPlayerEliminated, setLastProcessedBlockPlayerEliminated] = useState<Number>(0);
-  // const [lastProcessedBlockGameWon, setLastProcessedBlockGameWon] = useState<Number>(0);
   const [processedEventHashes, setProcessedEventHashes] = useState<string[]>([]);
+
+  const [mafiaAttack, setMafiaAttack] = useState(null);
+  const [doctorSave, setDoctorSave] = useState(null);
+  const [detectiveInvestigation, setDetectiveInvestigation] = useState(null);
 
   const { address: connectedAddress } = useAccount();
   const { setTheme } = useTheme();
@@ -126,7 +125,6 @@ const Home: NextPage = () => {
         if (!processedEventHashes.includes(txHash)) {
           const playerAddress: string | undefined = log.args.player;
           const roleNumber: number | undefined = log.args.role;
-          console.log(`Player address ${playerAddress} - Role ${roleNumber}`);
           if (playerAddress && roleNumber !== undefined) {
             const roleName = roleMapping[roleNumber];
             const updatedPlayers = players.map(player =>
@@ -142,6 +140,16 @@ const Home: NextPage = () => {
     },
   });
 
+  const resetCycle = () => {
+    setGameOutcome("");
+    setStory("The night has begun. The Mafia, Doctor, and Detective are taking their actions.\r\n");
+    setAccusedPlayers([]);
+    setAccusationCompleted(false);
+    for (let i = 0; i < players.length; i++) {
+      setHasAccused(prev => ({ ...prev, [players[i].addr]: false }));
+    }
+  };
+
   useScaffoldWatchContractEvent({
     contractName: "MafiaGame",
     eventName: "PhaseChanged",
@@ -149,20 +157,51 @@ const Home: NextPage = () => {
       logs.forEach(log => {
         const txHash = log.transactionHash;
         if (!processedEventHashes.includes(txHash)) {
-          console.log("Phase changed", txHash);
           const phaseNumber: number | undefined = log.args.newPhase;
           if (phaseNumber !== undefined) {
             const phaseName = phaseMapping[phaseNumber];
             setCurrentPhase(phaseName);
 
             if (phaseName === "Night") {
-              setGameOutcome("");
+              resetCycle();
+            } else if (phaseName === "Day") {
+              let nightStory = "Last night was peaceful";
+              if (
+                mafiaAttack !== doctorSave &&
+                mafiaAttack !== "0x0000000000000000000000000000000000000000" &&
+                mafiaAttack !== null &&
+                mafiaAttack !== undefined &&
+                mafiaAttack !== ""
+              ) {
+                nightStory = `Last night, the mafia killed ${mafiaAttack}`;
+              } else if (
+                mafiaAttack !== "0x0000000000000000000000000000000000000000" &&
+                mafiaAttack !== null &&
+                mafiaAttack !== undefined &&
+                mafiaAttack !== ""
+              ) {
+                nightStory = `Last night, the mafia tried to kill ${mafiaAttack}, but the doctor saved them`;
+              }
+
+              if (
+                detectiveInvestigation !== "0x0000000000000000000000000000000000000000" &&
+                detectiveInvestigation !== null &&
+                detectiveInvestigation !== undefined &&
+                detectiveInvestigation !== ""
+              ) {
+                const investigationResult = players.find(
+                  player => player.addr === detectiveInvestigation && player.role === "Mafia",
+                );
+                if (investigationResult) {
+                  nightStory = `${nightStory}.\r\n The detective discovered that ${detectiveInvestigation} is a mafia member.`;
+                } else {
+                  nightStory = `${nightStory}.\r\n The detective found no evidence against ${detectiveInvestigation}.`;
+                }
+              }
               setStory(
                 prevStory =>
-                  prevStory + "The night has begun. The Mafia, Doctor, and Detective are taking their actions.\n",
+                  prevStory + `The day has begun.\r\n${nightStory}.\r\nPlayers are discussing and accusing others.\r\n`,
               );
-            } else if (phaseName === "Day") {
-              setStory(prevStory => prevStory + "The day has begun. Players are discussing and accusing others.\n");
             }
           }
           setProcessedEventHashes(prevHashes => [...prevHashes, txHash]); // Store the processed hash
@@ -195,10 +234,9 @@ const Home: NextPage = () => {
       logs.forEach(log => {
         const txHash = log.transactionHash;
         if (!processedEventHashes.includes(txHash)) {
-          console.log("Player Accused", txHash);
           const accuser = log.args.accuser as string;
           const accused = log.args.accused as string;
-          setStory(prevStory => prevStory + `Player ${accuser} has accused ${accused}.\n`);
+          setStory(prevStory => prevStory + `Player ${accuser} has accused ${accused}.\r\n`);
           setProcessedEventHashes(txHash); // Update the last processed block number
         }
       });
@@ -225,10 +263,9 @@ const Home: NextPage = () => {
       logs.forEach(log => {
         const txHash = log.transactionHash;
         if (!processedEventHashes.includes(txHash)) {
-          console.log("Vote Cast", txHash);
-          const voter = log.args.voter as string;
-          const accused = log.args.accused as string;
-          setStory(prevStory => prevStory + `Player ${voter} has voted to eliminate ${accused}.\n`);
+          // const voter = log.args.voter as string;
+          // const accused = log.args.accused as string;
+          // setStory(prevStory => prevStory + `Player ${voter} has voted to eliminate ${accused}.\r\n`);
           setProcessedEventHashes(txHash); // Update last processed block
         }
       });
@@ -242,9 +279,8 @@ const Home: NextPage = () => {
       logs.forEach(log => {
         const txHash = log.transactionHash;
         if (!processedEventHashes.includes(txHash)) {
-          console.log("Player Eliminated", txHash);
           const eliminated = log.args.eliminatedPlayer as string;
-          setStory(prevStory => prevStory + `Player ${eliminated} has been eliminated.\n`);
+          setStory(prevStory => prevStory + `Player ${eliminated} has been eliminated.\r\n`);
           setProcessedEventHashes(txHash); // Update last processed block
         }
       });
@@ -258,11 +294,10 @@ const Home: NextPage = () => {
       logs.forEach(log => {
         const txHash = log.transactionHash;
         if (!processedEventHashes.includes(txHash)) {
-          console.log("Game Won", txHash);
           const message: string | undefined = log.args.message;
           if (message) {
             setGameOutcome(message);
-            setStory(prevStory => `${prevStory}\n${message}\n`);
+            setStory(prevStory => `${prevStory}\r\n${message}\r\n`);
           }
           setProcessedEventHashes(txHash); // Update last processed block
         }
@@ -277,8 +312,7 @@ const Home: NextPage = () => {
       logs.forEach(log => {
         const txHash = log.transactionHash;
         if (!processedEventHashes.includes(txHash)) {
-          console.log("Game Continue", txHash);
-          setGameOutcome("The Game Continue\n");
+          setGameOutcome("The Game Continue\r\n");
           setProcessedEventHashes(txHash); // Update last processed block
         }
       });
@@ -406,16 +440,9 @@ const Home: NextPage = () => {
 
   const handleJoinGame = async () => {
     try {
-      await writeContractAsync(
-        {
-          functionName: "joinGame",
-        },
-        {
-          onBlockConfirmation: txnReceipt => {
-            console.log("📦 Transaction blockHash", txnReceipt.blockHash);
-          },
-        },
-      );
+      await writeContractAsync({
+        functionName: "joinGame",
+      });
     } catch (e) {
       console.error("Error joining the game", e);
     }
@@ -429,7 +456,10 @@ const Home: NextPage = () => {
         },
         {
           onBlockConfirmation: txnReceipt => {
-            console.log("📦 Transaction blockHash", txnReceipt.blockHash);
+            setStory(
+              prevStory =>
+                prevStory + "The night has begun. The Mafia, Doctor, and Detective are taking their actions.\r\n",
+            );
           },
         },
       );
@@ -446,7 +476,6 @@ const Home: NextPage = () => {
         },
         {
           onBlockConfirmation: txnReceipt => {
-            console.log("📦 Transaction blockHash", txnReceipt.blockHash);
             setWinChecked(false); // Reset winChecked for the next round
           },
         },
@@ -464,8 +493,6 @@ const Home: NextPage = () => {
         },
         {
           onBlockConfirmation: txnReceipt => {
-            console.log("📦 Transaction blockHash", txnReceipt.blockHash);
-            console.log("Game outcome", gameOutcome, " story", story);
             setWinChecked(true);
           },
         },
@@ -481,11 +508,11 @@ const Home: NextPage = () => {
         <JoinGameComponent players={players} handleJoinGame={handleJoinGame} hasJoined={hasJoined} />
       )}
 
-      {gameOutcome && (
+      {story && (
         <div className="w-full max-w-3xl space-y-6">
           <div className="mt-4 p-4 border rounded-md">
-            <h2 className="text-2xl font-semibold">{gameOutcome}</h2>
-            {story && <p>{story}</p>}
+            <p>{story}</p>
+            {gameOutcome && <h2 className="text-2xl font-semibold">{gameOutcome}</h2>}
           </div>
         </div>
       )}
@@ -502,6 +529,9 @@ const Home: NextPage = () => {
           hasVoted={hasVoted}
           setHasVoted={setHasVoted}
           setHasAccused={setHasAccused}
+          setDetectiveInvestigation={setDetectiveInvestigation}
+          setDoctorSave={setDoctorSave}
+          setMafiaAttack={setMafiaAttack}
         />
       )}
       {isMayor && (
