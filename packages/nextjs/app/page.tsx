@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import type { NextPage } from "next";
 import { useTheme } from "next-themes";
 import { useAccount } from "wagmi";
@@ -142,7 +142,7 @@ const Home: NextPage = () => {
 
   const resetCycle = () => {
     setGameOutcome("");
-    setStory("The night has begun. The Mafia, Doctor, and Detective are taking their actions.\r\n");
+    setStory("The night has begun. The Mafia, Doctor, and Detective are taking their actions.\n");
     setAccusedPlayers([]);
     setAccusationCompleted(false);
     for (let i = 0; i < players.length; i++) {
@@ -193,14 +193,14 @@ const Home: NextPage = () => {
                   player => player.addr === detectiveInvestigation && player.role === "Mafia",
                 );
                 if (investigationResult) {
-                  nightStory = `${nightStory}.\r\n The detective discovered that ${detectiveInvestigation} is a mafia member.`;
+                  nightStory = `${nightStory}.\n The detective discovered that ${detectiveInvestigation} is a mafia member.`;
                 } else {
-                  nightStory = `${nightStory}.\r\n The detective found no evidence against ${detectiveInvestigation}.`;
+                  nightStory = `${nightStory}.\n The detective found no evidence against ${detectiveInvestigation}.`;
                 }
               }
               setStory(
                 prevStory =>
-                  prevStory + `The day has begun.\r\n${nightStory}.\r\nPlayers are discussing and accusing others.\r\n`,
+                  prevStory + `The day has begun.\n${nightStory}.\nPlayers are discussing and accusing others.\n`,
               );
             }
           }
@@ -236,7 +236,7 @@ const Home: NextPage = () => {
         if (!processedEventHashes.includes(txHash)) {
           const accuser = log.args.accuser as string;
           const accused = log.args.accused as string;
-          setStory(prevStory => prevStory + `Player ${accuser} has accused ${accused}.\r\n`);
+          setStory(prevStory => prevStory + `Player ${accuser} has accused ${accused}.\n`);
           setProcessedEventHashes(txHash); // Update the last processed block number
         }
       });
@@ -265,7 +265,7 @@ const Home: NextPage = () => {
         if (!processedEventHashes.includes(txHash)) {
           // const voter = log.args.voter as string;
           // const accused = log.args.accused as string;
-          // setStory(prevStory => prevStory + `Player ${voter} has voted to eliminate ${accused}.\r\n`);
+          // setStory(prevStory => prevStory + `Player ${voter} has voted to eliminate ${accused}.\n`);
           setProcessedEventHashes(txHash); // Update last processed block
         }
       });
@@ -280,7 +280,7 @@ const Home: NextPage = () => {
         const txHash = log.transactionHash;
         if (!processedEventHashes.includes(txHash)) {
           const eliminated = log.args.eliminatedPlayer as string;
-          setStory(prevStory => prevStory + `Player ${eliminated} has been eliminated.\r\n`);
+          setStory(prevStory => prevStory + `Player ${eliminated} has been eliminated.\n`);
           setProcessedEventHashes(txHash); // Update last processed block
         }
       });
@@ -297,7 +297,7 @@ const Home: NextPage = () => {
           const message: string | undefined = log.args.message;
           if (message) {
             setGameOutcome(message);
-            setStory(prevStory => `${prevStory}\r\n${message}\r\n`);
+            setStory(prevStory => `${prevStory}\n${message}\n`);
           }
           setProcessedEventHashes(txHash); // Update last processed block
         }
@@ -312,7 +312,7 @@ const Home: NextPage = () => {
       logs.forEach(log => {
         const txHash = log.transactionHash;
         if (!processedEventHashes.includes(txHash)) {
-          setGameOutcome("The Game Continue\r\n");
+          setGameOutcome("The Game Continue\n");
           setProcessedEventHashes(txHash); // Update last processed block
         }
       });
@@ -458,7 +458,7 @@ const Home: NextPage = () => {
           onBlockConfirmation: txnReceipt => {
             setStory(
               prevStory =>
-                prevStory + "The night has begun. The Mafia, Doctor, and Detective are taking their actions.\r\n",
+                prevStory + "The night has begun. The Mafia, Doctor, and Detective are taking their actions.\n",
             );
           },
         },
@@ -502,6 +502,16 @@ const Home: NextPage = () => {
     }
   };
 
+  // Helper function to split the story by newline and wrap in <br />
+  const renderStoryWithLineBreaks = (story: string) => {
+    return story.split("\n").map((text, index) => (
+      <Fragment key={index}>
+        {text}
+        <br />
+      </Fragment>
+    ));
+  };
+
   return (
     <div className="mb-6 flex flex-col items-center space-y-6">
       {!isMayor && !gameStarted && (
@@ -511,7 +521,8 @@ const Home: NextPage = () => {
       {story && (
         <div className="w-full max-w-3xl space-y-6">
           <div className="mt-4 p-4 border rounded-md">
-            <p>{story}</p>
+            {/* Use a helper function to display the story with line breaks */}
+            <p>{renderStoryWithLineBreaks(story)}</p>
             {gameOutcome && <h2 className="text-2xl font-semibold">{gameOutcome}</h2>}
           </div>
         </div>
