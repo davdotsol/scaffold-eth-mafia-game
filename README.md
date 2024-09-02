@@ -1,81 +1,98 @@
-# 🏗 Scaffold-ETH 2
+# Mafia Game on the Blockchain
 
-<h4 align="center">
-  <a href="https://docs.scaffoldeth.io">Documentation</a> |
-  <a href="https://scaffoldeth.io">Website</a>
-</h4>
+Welcome to the **Mafia Game on the Blockchain**, a decentralized implementation of the classic social deduction game "Mafia," where players take on different roles and work to eliminate the opposing team. This project leverages Ethereum smart contracts to create a transparent and fair game that anyone can participate in, using the power of the blockchain.
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+## Overview
 
-⚙️ Built using NextJS, RainbowKit, Hardhat, Wagmi, Viem, and Typescript.
+This project is built using **Scaffold-ETH 2** and consists of a smart contract written in Solidity, a web-based front end using **Next.js** and **TypeScript**, and styling with **TailwindCSS**. The game is deployed on the Ethereum blockchain, ensuring decentralization, fairness, and transparency.
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+## Table of Contents
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+- [Smart Contract Overview](#smart-contract-overview)
+  - [Roles and Phases](#roles-and-phases)
+  - [Game Events](#game-events)
+  - [Core Functions](#core-functions)
+- [Game Rules](#game-rules)
+  - [Setup](#setup)
+  - [Roles](#roles)
+  - [Gameplay](#gameplay)
+  - [Winning Conditions](#winning-conditions)
+- [How to Play](#how-to-play)
 
-## Requirements
+## Smart Contract Overview
 
-Before you begin, you need to install the following tools:
+The smart contract is written in Solidity and includes several core components that manage the game's logic, roles, phases, and events.
 
-- [Node (>= v18.17)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
+### Roles and Phases
 
-## Quickstart
+- **Roles:**
 
-To get started with Scaffold-ETH 2, follow the steps below:
+  - **Mayor:** Directs the game and has control over the game flow.
+  - **Mafia:** Kills other players while avoiding detection.
+  - **Doctor:** Can save players from elimination.
+  - **Detective:** Investigates players to determine if they are mafia.
+  - **Townsperson:** Basic role, votes to eliminate suspected mafia.
 
-1. Clone this repo & install dependencies
+- **Phases:**
+  - **Day Phase:** Players discuss, accuse, and vote for elimination.
+  - **Night Phase:** Mafia selects their target, the Doctor chooses someone to save, and the Detective investigates.
 
-```
-git clone https://github.com/scaffold-eth/scaffold-eth-2.git
-cd scaffold-eth-2
-yarn install
-```
+### Game Events
 
-2. Run a local network in the first terminal:
+The smart contract emits several events to notify off-chain components (like the web frontend) about important changes in the game state:
 
-```
-yarn chain
-```
+- `PlayerJoined(Player player)`: Triggered when a player joins the game.
+- `RoleAssigned(address indexed player, Role role)`: Triggered when roles are assigned.
+- `PhaseChanged(Phase newPhase, string story)`: Triggered when the phase changes.
+- `PlayerAccused(address indexed accuser, address indexed accused)`: Triggered when a player is accused.
+- `VoteCast(address indexed voter, address indexed accused)`: Triggered when a player casts a vote.
+- `VotingCompleted(address indexed eliminatedPlayer)`: Triggered when voting is completed.
+- `PlayerEliminated(address indexed eliminatedPlayer)`: Triggered when a player is eliminated.
+- `GameWon(string message)`: Triggered when a team wins the game.
+- `GameContinue()`: Triggered when the game continues to the next cycle.
+- `AccusationCompleted()`: Triggered when all accusations are completed.
 
-This command starts a local Ethereum network using Hardhat. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `hardhat.config.ts`.
+### Core Functions
 
-3. On a second terminal, deploy the test contract:
+- `joinGame()`: Allows a player to join the game.
+- `startGame()`: Starts the game once the minimum number of players have joined.
+- `nextPhase()`: Moves the game to the next phase (Day or Night).
+- `accusePlayer(address _accused, string memory _reason)`: Allows a player to accuse another player.
+- `voteForElimination(address _accused)`: Allows a player to vote for eliminating an accused player.
+- `eliminatePlayer()`: Eliminates a player based on votes.
+- `checkWin()`: Checks for a win condition (Mafia or Townspeople win).
+- `resetGame()`: Resets the game to its initial state.
 
-```
-yarn deploy
-```
+## Game Rules
 
-This command deploys a test smart contract to the local network. The contract is located in `packages/hardhat/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/hardhat/deploy` to deploy the contract to the network. You can also customize the deploy script.
+### Setup
 
-4. On a third terminal, start your NextJS app:
+1. **Gather Players**: At least 4 players are required to start the game, with one additional player acting as the Mayor. Ideally, 12-16 players are best.
+2. **Assign Roles**: The smart contract randomly assigns roles based on the number of players:
+   - For every 4 players, there is one Mafia.
+   - One Doctor and one Detective are always included in the game.
 
-```
-yarn start
-```
+### Roles
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+- **Mayor**: The game's director who assigns roles, announces events, and oversees voting. The Mayor is not an active player.
+- **Mafia**: Work to eliminate the Townspeople and avoid detection.
+- **Doctor**: Saves players from elimination, including themselves.
+- **Detective**: Investigates other players to find the Mafia.
+- **Townspeople**: Attempt to find and eliminate the Mafia through voting.
 
-**What's next**:
+### Gameplay
 
-- Edit your smart contract `YourContract.sol` in `packages/hardhat/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/hardhat/deploy`
-- Edit your smart contract test in: `packages/hardhat/test`. To run test use `yarn hardhat:test`
+1. **Day Phase**: Players discuss and accuse each other of being Mafia. Accusations are made, and votes are cast to eliminate a player.
+2. **Night Phase**: The Mafia selects a target to eliminate, the Doctor selects someone to save, and the Detective investigates a player.
 
-## Documentation
+### Winning Conditions
 
-Visit our [docs](https://docs.scaffoldeth.io) to learn how to start building with Scaffold-ETH 2.
+- **Mafia Win**: The Mafia wins when they outnumber or equal the remaining Townspeople.
+- **Town Win**: The Townspeople win when all Mafia members are eliminated.
 
-To know more about its features, check out our [website](https://scaffoldeth.io).
+## How to Play
 
-## Contributing to Scaffold-ETH 2
-
-We welcome contributions to Scaffold-ETH 2!
-
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+1. **Join the Game**: Connect your Ethereum wallet and join the game.
+2. **Wait for the Game to Start**: Once the Mayor starts the game, roles will be assigned.
+3. **Participate in Phases**: During the day, discuss and vote; during the night, perform your role's actions.
+4. **Win the Game**: Work with your team to eliminate the opposing side!
